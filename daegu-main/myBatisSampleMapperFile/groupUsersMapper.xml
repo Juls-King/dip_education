@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper
+        namespace="com.openeg.openegscts.teacher.repository.GroupUsersMapper">
+    <select id="getGroupInfo" parameterType="int" resultType="com.openeg.openegscts.teacher.entity.GroupGroupEntity">
+        SELECT
+            group_id as groupId,
+            group_name as groupName,
+            group_course as groupCourse,
+            group_course_count as groupCourseCount,
+            group_start_date as groupStartDate,
+            group_due_date as groupDueDate,
+            group_status as groupStatus,
+            group_operator_id as groupOperatorId,
+            group_sub_operator_id as groupSubOperatorId,
+            group_complete_percentage as groupCompletePercentage,
+            group_train_course_id as groupTrainCourseId,
+            group_exam_yn as groupExamYn,
+            allow_languages as allowLanguages
+        from group_tb
+        where group_id = #{groupId}
+    </select>
+
+
+
+    <select id="getUsersForOperator" parameterType="int" resultType="com.openeg.openegscts.teacher.entity.GroupUsersList">
+        SELECT distinct
+            u.name as userName,
+            u.user_id as userId,
+            u.allow_languages as allowLangues,
+            g.group_id as groupId,
+            g.group_name as groupName,
+            g.group_exam_yn as groupExamYn,
+            g.group_course as groupCourse,
+            g.group_course_count as groupCourseCount,
+            g.group_start_date as groupStartDate,
+            g.group_due_date as groupDueDate
+        from
+            group_tb g
+                LEFT join user_tb u
+                          on g.group_id = u.group_id
+        where
+            u.group_id=#{groupId}
+          AND u.type=1
+
+        order
+            by  u.name;
+    </select>
+
+    <select id="getUserDetailForOperator" parameterType="string" resultType="com.openeg.openegscts.teacher.entity.GroupUserDetail">
+        SELECT distinct
+            u.name as userName,
+            u.user_id as userId,
+            u.allow_languages as allowLanguages,
+            g.group_exam_yn as groupExamYn,
+            g.group_id as groupId,
+            g.group_name as groupName,
+            g.group_course as groupCourse,
+            g.group_course_count as groupCourseCount,
+            g.group_start_date as groupStartDate,
+            g.group_due_date as groupDueDate
+        from
+            group_tb g
+                LEFT join user_tb u
+                          on g.group_id = u.group_id
+        where
+            u.group_id=#{groupId}
+          AND u.type=1
+          AND u.user_id=#{userId}
+
+    </select>
+
+
+</mapper>

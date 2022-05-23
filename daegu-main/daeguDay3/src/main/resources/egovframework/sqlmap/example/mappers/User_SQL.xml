@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="egovframework.example.sample.service.impl.IUserMapper">
+
+	<insert id="addUser" parameterType="egovframework.example.sample.service.UserVO">
+		
+		INSERT INTO USER
+				( id
+				  , user_name
+				  , address
+				  , phone )
+		VALUES ( #{id}
+			  , #{userName}
+			  , #{address}
+			  , #{phone}
+		);
+	
+	</insert>
+	
+	<select id="getAllUser" resultType="egovframework.example.sample.service.UserVO">
+		
+		SELECT
+		id as id,
+		user_name as userName,
+		address as address,
+		phone as phone
+		FROM
+		user;
+	
+	</select>
+	
+	<select id="getUserById" parameterType="Long" resultType="egovframework.example.sample.service.UserVO">
+		
+		SELECT
+		id as id,
+		user_name as userName,
+		address as address,
+		phone as phone
+		FROM
+		user
+		WHERE id= #{id};
+	
+	</select>
+
+</mapper>

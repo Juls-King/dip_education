@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+
+<mapper namespace="com.openeg.openegscts.myclass.repository.IClassMapper">
+
+  <select id="checkApplicantEmailConfirm" parameterType="string" resultType="boolean">
+    select exists(
+             select email
+             from applicant_tb
+             where email = #{email}
+             )
+  </select>
+
+  <select id="getMyApplicant" parameterType="string" resultType="com.openeg.openegscts.myclass.entity.ApplyFormEntity">
+    select name,
+           gender,
+           birthday,
+           phone,
+           address,
+           email,
+           password           as passwd,
+           route,
+           job_objective      as jobObjective,
+           course,
+           military,
+           disability,
+           education,
+           experience,
+           original_file_name as originalFileName,
+           new_file_name      as newFileName,
+           reason,
+           introduction,
+           reg_date           as regDate,
+           goal,
+           count
+    from applicant_tb
+    where email = #{email};
+  </select>
+
+
+  <insert id="applyForClasses" parameterType="com.openeg.openegscts.myclass.entity.ApplyFormEntity">
+    insert into applicant_tb (name,
+                              gender,
+                              birthday,
+                              phone,
+                              address,
+                              email,
+                              password,
+                              route,
+                              job_objective,
+                              course,
+                              military,
+                              disability,
+                              education,
+                              experience,
+                              original_file_name,
+                              new_file_name,
+                              reason,
+                              introduction,
+                              goal,
+                              count)
+    values (#{name},
+            #{gender},
+            #{birthday},
+            #{phone},
+            #{address},
+            #{email},
+            #{passwd},
+            #{route},
+            #{jobObjective},
+            #{course},
+            #{military},
+            #{disability},
+            #{education},
+            #{experience},
+            #{originalFileName},
+            #{newFileName},
+            #{reason},
+            #{introduction},
+            #{goal},
+            #{count})
+  </insert>
+
+  <update id="modifyApplyForClasses" parameterType="com.openeg.openegscts.myclass.entity.ApplyFormEntity">
+    update applicant_tb
+    set name               = #{name},
+        gender             = #{gender},
+        birthday           = #{birthday},
+        phone              = #{phone},
+        address            = #{address},
+        route              = #{route},
+        job_objective      = #{jobObjective},
+        course             = #{course},
+        military           = #{military},
+        disability         = #{disability},
+        education          = #{education},
+        experience         = #{experience},
+        original_file_name = #{originalFileName},
+        new_file_name      = #{newFileName},
+        reason             = #{reason},
+        introduction       = #{introduction},
+        goal               = #{goal},
+        count              = #{count}
+    where email = #{email}
+  </update>
+
+  <delete id="deleteMyApplicant" parameterType="string">
+    delete
+    from applicant_tb
+    where email = #{email}
+  </delete>
+</mapper>

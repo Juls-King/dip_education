@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.openeg.openegscts.student.repository.IUserMapper">
+
+  <insert id="signUpUser" useGeneratedKeys="true" keyProperty="userId" parameterType="com.openeg.openegscts.student.entity.Users">
+    insert into user_tb
+      (user_id, name, email, password, phone, type, reg_date, expire_date, expire_yn, is_oauth, rule_check)
+    values (#{userId}, #{name}, #{email}, #{password}, #{phone}, #{type}, DATE_FORMAT(SYSDATE(), '%Y/%m/%d %H:%i:%s'), DATE_FORMAT(DATE_ADD(NOW(), INTERVAL 1 MONTH), '%Y/%m/%d %H:%i:%s'), 'N', 1, #{ruleCheck})
+  </insert>
+
+  <!-- 회원 유효일자(expire_date)가 경과한 모든 사용자의 승인상태를 0(승인전) 상태로 변경 -->
+  <update id="updateStatusToUnapprovedForAllUsers">
+    <![CDATA[
+    update user_tb
+    set status    = 0,
+        expire_yn = 'Y'
+    where expire_date is not null
+      and expire_date < now()
+    ]]>
+    </update>
+
+  <select id="findByEmail" resultType="com.openeg.openegscts.student.entity.Users" parameterType="string">
+    select u.user_id          as userId,
+           u.name,
+           u.email,
+           u.password,
+           u.type,
+           u.reg_date         as regDate,
+           u.is_oauth         as isOauth,
+           u.rule_check       as ruleCheck,
+           u.free_yn          as freeYn,
+           u.allow_languages  as allowLanguages,
+           u.status           as status,
+           u.group_id         as groupId,
+           u.cloud_account_id as cloudAccountId,
+           gt.class_id        as classId,
+           u.sub_class_id     as subClassId
+    from user_tb u
+           left join group_tb gt
+                     on u.group_id = gt.group_id
+    where u.email = #{email}
+  </select>
+
+  <!-- 만료일자(expired_date)가 존재하는 경우 현재 이전인 경우에만 로그인 가능 -->
+  <select id="confirmUser" resultType="com.openeg.openegscts.student.entity.Users" parameterType="string">
+    <![CDATA[
+    select user_id         as userId,
+           name,
+           email,
+           password,
+           type,
+           reg_date        as regDate,
+           is_oauth        as isOauth,
+           rule_check      as ruleCheck,
+           status,
+           free_yn         as freeYn,
+           allow_languages as allowLanguages
+    from user_tb
+    where email = #{email}
+      and (is_oauth = 1)
+      and (status = 0 or status = 1)
+      and (type = 0 or type = 1 or type = 2 or type = 3 or type = 4)
+      and (expire_date is null or expire_date > now())
+      and (expire_yn = 'N')
+    ]]>
+    </select>
+
+  <select id="confirmUser2" resultType="com.openeg.openegscts.student.entity.Users" parameterType="string">
+    <![CDATA[
+    select user_id         as userId,
+           name,
+           email,
+           password,
+           type,
+           reg_date        as regDate,
+           is_oauth        as isOauth,
+           rule_check      as ruleCheck,
+           status,
+           free_yn         as freeYn,
+           allow_languages as allowLanguages
+    from user_tb
+    where user_id = #{userId}
+      and (is_oauth = 1)
+      and (status = 0 or status = 1)
+      and (type = 0 or type = 1 or type = 2 or type = 3 or type = 4)
+      and (expire_date is null or expire_date > now())
+      and (expire_yn = 'N')
+    ]]>
+    </select>
+
+  <select id="confirmUserOauth" resultType="com.openeg.openegscts.student.entity.Users" parameterType="string">
+    select user_id    as userId,
+           name,
+           email,
+           type,
+           phone,
+           status,
+           reg_date   as regDate,
+           is_oauth   as isOauth,
+           rule_check as ruleCheck
+    from user_tb
+    where email = #{email}
+  </select>
+
+  <select id="getUserById" resultType="com.openeg.openegscts.student.entity.Users" parameterType="String">
+    select u.user_id          as userId,
+           u.name,
+           u.email,
+           u.password,
+           u.type,
+           u.reg_date         as regDate,
+           u.is_oauth         as isOauth,
+           u.rule_check       as ruleCheck,
+           u.free_yn          as freeYn,
+           u.allow_languages  as allowLanguages,
+           u.status           as status,
+           u.group_id         as groupId,
+           u.cloud_account_id as cloudAccountId,
+           gt.class_id        as classId,
+           u.sub_class_id     as subClassId
+    from user_tb u
+           left join group_tb gt
+                     on u.group_id = gt.group_id
+    where u.user_id = #{userId}
+  </select>
+
+  <select id="confirmPwd" resultType="com.openeg.openegscts.student.entity.Users" parameterType="string">
+    select email
+    from user_tb
+    where password = #{password}
+  </select>
+
+  <select id="getAuthId" resultType="com.openeg.openegscts.student.entity.Users" parameterType="com.openeg.openegscts.student.entity.Users">
+    select user_id    as userId,
+           name,
+           email,
+           password,
+           type,
+           phone,
+           status,
+           reg_date   as regDate,
+           is_oauth   as isOauth,
+           rule_check as ruleCheck
+    from user_tb
+    where name = #{name}
+      and email = #{email}
+  </select>
+
+  <select id="getAuthPw" resultType="com.openeg.openegscts.student.entity.Users" parameterType="com.openeg.openegscts.student.entity.Users">
+    select user_id    as userId,
+           name,
+           email,
+           password,
+           type,
+           phone,
+           status,
+           reg_date   as regDate,
+           is_oauth   as isOauth,
+           rule_check as ruleCheck
+    from user_tb
+    where user_id = #{userId}
+      and name = #{name}
+      and email = #{email}
+  </select>
+
+  <update id="updateUser" parameterType="com.openeg.openegscts.student.entity.Users">
+    update user_tb
+    set name=#{name},
+        email=#{email},
+        phone=#{phone}
+    where user_id = #{userId}
+  </update>
+  <update id="updatePassword" parameterType="com.openeg.openegscts.student.entity.Users">
+    update user_tb
+    set password=#{password}
+    where user_id = #{userId}
+  </update>
+  <update id="updateUserSecession">
+    update user_tb
+    set status=#{status},
+        secession_opinion = #{secessionOpinion}
+    where user_id = #{userId}
+  </update>
+  <update id="updateRuleCheck">
+    update user_tb
+    set rule_check=1
+    where user_id = #{userId}
+  </update>
+  <update id="updateRefreshToken">
+    update current_login_tb
+    set refresh_token=#{refreshToken}
+    where user_id = #{userId}
+  </update>
+
+  <insert id="insertEmailConfirm" parameterType="string">
+    insert into confirm_email_tb(user_email, code, enable)
+    values (#{userEmail}, #{code}, 1)
+  </insert>
+  <select id="updateLimitEmail" resultType="com.openeg.openegscts.student.entity.ConfirmEmailInfo" parameterType="string">
+    update confirm_email_tb
+    set enable = #{status}
+    where user_email = #{userEmail} order by id desc limit 1
+  </select>
+  <!-- 현재 시간을 기준으로 5분이 경과한 인증번호를 모두 무효화 처리 -->
+  <update id="disableAllConfirmEmail">
+        <![CDATA[
+    update confirm_email_tb
+    set enable = 0
+    where `email_confirm_date` < now() - interval 5 minute
+    ]]>
+    </update>
+  <!-- 현재 시간을 기준으로 5분 안에 생성된 인증번호만 유효한 것으로 판단 -->
+  <select id="getConfirmEmail"
+    resultType="com.openeg.openegscts.student.entity.ConfirmEmailInfo"
+    parameterType="string">
+    select *
+    from confirm_email_tb
+    where user_email = #{userEmail}
+      and code = #{code}
+      and enable = 1
+      and `email_confirm_date` >= now() - interval 5 minute
+  </select>
+
+  <!-- 정상적 로그아웃 시 토큰 삭제 -->
+  <delete id="deleteToken" parameterType="string">
+    delete
+    from current_login_tb
+    where user_id = #{userId}
+  </delete>
+
+  <!-- last_refresh_time -->
+  <update id="updateLastRefreshTime" parameterType="string">
+    update current_login_tb
+    set last_refresh_time=NOW()
+    where user_id = #{userId}
+  </update>
+
+  <!-- 토큰 만료 시간이 3시간 경과한 로그인 정보 삭제 -->
+  <delete id="deleteExpireToken">
+        <![CDATA[
+    DELETE
+    from current_login_tb
+    WHERE DATE_ADD(last_refresh_time, INTERVAL (expiration_time_limit/1000 + 10800) SECOND) < NOW();
+    ]]>
+    </delete>
+
+
+  <!-- 리프레시 토큰 일치 여부 확인 -->
+  <select id="checkValidRefreshToken" parameterType="string" resultType="boolean">
+    select exists(select user_id as userId from current_login_tb where user_id = #{claimsUserId} and refresh_token = #{refreshToken})
+  </select>
+
+
+  <!-- 로그인 정보 저장 또는 업데이트 -->
+  <insert id="saveLoginInfo" parameterType="com.openeg.openegscts.student.entity.LoginEntity">
+    insert into current_login_tb (user_id, remote_addr, last_login_date, last_refresh_time, expiration_time_limit, refresh_token)
+    values (#{userId}, #{remoteAddr}, NOW(), NOW(), #{expirationTimeLimit},  #{refreshToken}) on duplicate key
+    update remote_addr = #{remoteAddr}, last_login_date = NOW(), last_refresh_time=NOW(), expiration_time_limit=#{expirationTimeLimit}, refresh_token=#{refreshToken}
+  </insert>
+</mapper>

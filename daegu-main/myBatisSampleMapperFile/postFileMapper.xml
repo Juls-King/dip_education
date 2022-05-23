@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+
+<mapper namespace="com.openeg.openegscts.board.repository.IPostFileMapper">
+
+    <select id="getPostFileList" resultType="com.openeg.openegscts.board.entity.PostFile">
+        select 
+            <include refid="post_file_column"></include>
+        from post_file_tb f
+        where f.use_yn = 'Y'
+        order by f.file_reg_date desc, f.post_id desc 
+    </select>
+
+    <select id="getPostFileListByPostId" resultType="com.openeg.openegscts.board.entity.PostFile"  parameterType="long">
+        select 
+            <include refid="post_file_column"></include>
+        from post_file_tb f
+        where f.post_id = #{postId} 
+            and f.use_yn = 'Y'
+        order by f.file_reg_date desc, f.post_id desc 
+    </select>
+    <select id="getPostFileListByAdmin" resultType="com.openeg.openegscts.board.entity.PostFile"  parameterType="long">
+        select 
+            <include refid="post_file_column"></include>
+        from post_file_tb f
+        where f.post_id = #{postId} 
+        order by f.file_reg_date desc, f.post_id desc 
+    </select>
+    <select id="getPostFile" resultType="com.openeg.openegscts.board.entity.PostFile" parameterType="long">
+        select 
+            <include refid="post_file_column"></include>
+        from post_file_tb f
+        where f.file_id = #{fileId} 
+            and f.use_yn = 'Y'
+    </select>
+
+    <sql id="post_file_column">
+               f.file_id as fileId,
+               f.post_id as filePostId,
+               f.original_file_name as fileOriginalFileName,
+               f.stored_file_path as fileStoredFilePath,
+               f.file_size as fileSize,
+               f.file_hit_count as downloadHitCount,
+               f.use_yn as fileUseYn,
+               f.file_reg_date as fileRegDate
+    </sql>
+
+    <insert id="insertPostFile" useGeneratedKeys="true" keyProperty="fileId" keyColumn="file_id" parameterType="com.openeg.openegscts.board.entity.PostFile">
+        <include refid="insert_post_file"></include>
+    </insert>
+    <update id="updatePostFile" parameterType="com.openeg.openegscts.board.entity.PostFile">
+        <include refid="update_post_file"></include>
+    </update>
+    <update id="updatePostFileHit" parameterType="long">
+        <include refid="update_post_file_hit"></include>
+    </update>
+    <update id="updatePostFileUseYn" parameterType="long">
+        <include refid="update_post_file_useyn"></include>
+    </update>
+    <delete id="deletePostFiles" parameterType="long">
+        <include refid="delete_post_files"></include>
+    </delete>
+    <delete id="deletePostFile" parameterType="long">
+        <include refid="delete_post_file"></include>
+    </delete>
+
+    <sql id="insert_post_file">
+        insert into post_file_tb(
+            <!-- file_id, -->
+            post_id,
+            original_file_name,
+            stored_file_path,
+            file_size,
+            file_hit_count,
+            use_yn,
+            file_reg_date )
+        values(
+            <!-- #{fileId},  -->
+            #{filePostId}, 
+            #{fileOriginalFileName},
+            #{fileStoredFilePath}, 
+            #{fileSize}, 
+            #{fileHitCount},
+            #{fileUseYn}, 
+            DATE_FORMAT(SYSDATE(), '%Y/%m/%d %H:%i:%s') )
+    </sql>
+    <sql id="update_post_file">
+        update post_file_tb set 
+            post_id = #{filePostId},
+            <if test="fileOriginalFileName != ''">
+            original_file_name = #{fileOriginalFileName},
+            </if>
+            <if test="fileStoredFilePath != ''">
+            stored_file_path = #{fileStoredFilePath},
+            </if>
+            <if test="fileSize != ''">
+            file_size = #{fileSize},
+            </if>
+            <!-- file_hit_count = ${fileHitCount}, -->
+            use_yn = #{fileUseYn},
+            file_reg_date = DATE_FORMAT(SYSDATE(), '%Y/%m/%d %H:%i:%s')
+        where file_id = #{fileId}
+    </sql>
+    <sql id="update_post_file_hit">
+        update post_file_tb set 
+            file_hit_count = (select case count(*) when 0 then 1 else max(file_hit_count) + 1 end)
+        where file_id = #{fileId}
+    </sql>
+    <sql id="update_post_file_useyn">
+        update post_file_tb set 
+            use_yn = (select if(use_yn = 'Y', 'N', 'Y') as use_yn)
+        where file_id = #{fileId}
+    </sql>
+    <sql id="delete_post_files">
+        delete from post_file_tb where post_id=#{postId}
+    </sql>
+    <sql id="delete_post_file">
+        delete from post_file_tb where file_id=#{fileId}
+    </sql>
+    <select id="totalRecords" resultType="int">
+        select FOUND_ROWS();
+    </select>
+</mapper>

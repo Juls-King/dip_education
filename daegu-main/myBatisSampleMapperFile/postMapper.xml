@@ -1,0 +1,289 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+
+<mapper namespace="com.openeg.openegscts.board.repository.IPostMapper">
+
+    <select id="getPostList" resultType="com.openeg.openegscts.board.entity.Post">
+        select
+        <include refid="post_column_p"></include>
+        from post_tb p
+        order by p.category_id, p.post_reg_date desc, p.post_id desc 
+    </select>
+
+    <select id="getPostListByBoardId" resultType="com.openeg.openegscts.board.entity.Post"  parameterType="long">
+        select * 
+        from (
+            select @ROWNUM := @ROWNUM + 1 AS rowNum,
+            <include refid="post_column"></include>
+            <include refid="post_join"></include>,
+            (select @ROWNUM :=0 ) TMP
+            where p.board_id = b.board_id 
+                and p.board_id = #{boardId} 
+                and p.use_yn = 'Y'
+                and b.use_yn = 'Y'
+            order by p.post_reg_date desc, p.post_id desc 
+            ) post_tb
+        order by ROWNUM DESC
+    </select>
+    <select id="getPostListMain" resultType="com.openeg.openegscts.board.entity.Post"  parameterType="long">
+        select
+        <include refid="post_column"></include>
+        <include refid="post_join"></include>
+        where p.board_id = b.board_id 
+            and p.board_id = #{boardId} 
+            and p.use_yn = 'Y'
+            and p.main_yn = 'Y'
+            and b.use_yn = 'Y'
+        order by p.post_reg_date desc, p.post_id desc 
+        limit 4
+    </select>
+    <select id="getPostListWithRowNum" resultType="com.openeg.openegscts.board.entity.Post">
+        select * 
+        from (
+            select 
+                @ROWNUM := @ROWNUM + 1 AS rowNum,
+                <include refid="post_column"></include>
+                <include refid="post_join"></include>,
+                (select @ROWNUM :=0 ) TMP
+                <include refid="post_list_whereBase"></include>
+                <include refid="post_list_whereSearch"></include>
+                order by p.post_reg_date asc, p.post_id desc 
+        ) post_tb
+        order by ROWNUM DESC
+    </select>
+    <select id="getPostListByAdmin" resultType="com.openeg.openegscts.board.entity.Post">
+        select * 
+        from (
+            select 
+                @ROWNUM := @ROWNUM + 1 AS rowNum,
+                <include refid="post_column"></include>
+                <include refid="post_join"></include>,
+                (select @ROWNUM :=0 ) TMP
+                where p.board_id = #{boardId} 
+                    and b.use_yn = 'Y'
+                <include refid="post_list_whereSearch"></include>
+                order by p.main_yn asc, p.post_reg_date desc, p.post_id desc 
+        ) post_tb
+        order by ROWNUM DESC, mainYn DESC
+    </select>
+
+    <select id="getPostListWithPaging" resultType="com.openeg.openegscts.board.entity.Post">
+        select * 
+        from (
+            select 
+                @ROWNUM := @ROWNUM + 1 AS rowNum,
+                <include refid="post_column"></include>
+                <include refid="post_join"></include>,
+                (select @ROWNUM :=0 ) TMP
+                <include refid="post_list_whereBase"></include>
+                <include refid="post_list_whereSearch"></include>
+                order by p.post_reg_date desc, p.post_id desc 
+        ) post_tb
+        order by ROWNUM DESC
+        limit #{recordsPerPage} OFFSET #{startPageNo}
+    </select>
+   <select id="getPostListByUserId" resultType="com.openeg.openegscts.board.entity.Post">
+        <include refid="post_list_by_user_id"></include>
+    </select>
+
+    <select id="getPostListBySearch" resultType="com.openeg.openegscts.board.entity.Post">
+        <include refid="post_list_by_search"></include>
+    </select>
+
+    <select id="getPost" resultType="com.openeg.openegscts.board.entity.Post" parameterType="long">
+        select
+        <include refid="post_column"></include>,
+               <include refid="PrevId"></include>,
+               <include refid="NextId"></include>
+        <include refid="post_join"></include>
+        where p.post_id = #{postId} 
+            and b.use_yn = 'Y'
+    </select>
+
+    <sql id="post_list_by_search">
+        select * 
+        from (
+            select
+            @ROWNUM := @ROWNUM + 1 AS rowNum,
+            <include refid="post_column"></include>
+            <include refid="post_join"></include>,
+            (select @ROWNUM :=0 ) TMP
+            <include refid="post_list_whereBase"></include>
+            <include refid="post_list_whereSearch"></include>
+            order by p.post_reg_date desc, p.post_id desc 
+        ) post_tb
+        order by ROWNUM DESC
+    </sql>
+    <sql id="post_column">
+        <include refid="post_column_p"></include>,
+        <include refid="post_column_c"></include>
+    </sql>
+    <sql id="post_column_p">
+            p.post_id as postId,
+            p.board_id as boardId,
+            p.category_id as postCategoryId,
+            p.post_title as postTitle,
+            p.post_content as postContent,
+            p.post_author as postAuthor,
+            p.post_phone as postPhone,
+            p.user_id as userId,
+            u.name as userName,
+            p.post_hit_count as postHitCount,
+            p.main_yn as mainYn,
+            p.use_yn as useYn,
+            p.post_reg_date as postRegDate
+    </sql>
+    <sql id="post_column_c">
+            c.category_type as postCategoryType,
+            c.category_name as postCategoryName
+    </sql>
+
+    <sql id="post_join">
+        from post_tb p
+	        join board_tb b
+		        on  p.board_id = b.board_id
+            left outer join post_category_tb c
+                on p.category_id = c.category_id
+            left outer join user_tb u
+                on p.user_id = u.user_id
+    </sql>
+    <sql id="post_list_whereBase">
+        where p.board_id = #{boardId} 
+            and p.use_yn = 'Y'
+            and b.use_yn = 'Y'
+    </sql>
+    <sql id="post_list_whereUserId">
+            and p.user_id = #{userId}
+    </sql>
+    <sql id="post_list_whereSearch">
+        <choose>
+            <when test="searchOption == 'all'">
+                    and ( p.post_title like CONCAT('%',#{searchKeyword},'%')
+                    or  p.post_content like CONCAT('%',#{searchKeyword},'%') )
+            </when>
+            <when test="searchOption == 'postCategoryName'">
+                    and ( IFNULL(c.category_name, '') like CONCAT('%',#{searchKeyword},'%') )
+            </when>
+            <when test="searchOption == 'userName'">
+                    and ( IFNULL(u.name, '') like CONCAT('%',#{searchKeyword},'%') )
+            </when>
+            <when test="searchOption == 'postRegDate'">
+                    and DATE(p.post_reg_date) = #{searchKeyword}
+            </when>
+            <when test="searchOption == 'postContent'">
+                    and p.post_content like CONCAT('%',#{searchKeyword},'%')
+            </when>
+            <otherwise>
+                    and p.post_title like CONCAT('%',#{searchKeyword},'%')
+            </otherwise>
+        </choose>
+    </sql>
+
+    <sql id="post_list_by_user_id">
+        select * 
+        from (
+            select
+            @ROWNUM := @ROWNUM + 1 AS rowNum,
+            <include refid="post_column"></include>
+            <include refid="post_join"></include>,
+            (select @ROWNUM :=0 ) TMP
+            <include refid="post_list_whereBase"></include>
+            <include refid="post_list_whereUserId"></include>
+            <include refid="post_list_whereSearch"></include>
+            order by p.post_reg_date desc, p.post_id desc 
+        ) post_tb
+        order by ROWNUM DESC
+    </sql>
+
+    <sql id="PrevId">
+        (SELECT post_id  
+        FROM post_tb 
+        WHERE post_id &lt; #{postId} 
+            AND use_yn = 'Y' 
+            AND board_id = p.board_id
+        ORDER BY post_id DESC LIMIT 1
+        ) as PrevId
+    </sql>
+    <sql id="NextId">
+        (SELECT post_id  
+        FROM post_tb 
+        WHERE post_id &gt; #{postId} 
+            AND use_yn = 'Y'
+            AND board_id = p.board_id 
+        ORDER BY post_id LIMIT 1
+        ) as NextId
+    </sql>
+
+    <insert id="insertPost" useGeneratedKeys="true" keyProperty="postId" keyColumn="post_id" parameterType="com.openeg.openegscts.board.entity.Post">
+        insert into post_tb(
+            <!-- post_id, -->
+            board_id,
+            category_id,
+            post_title,
+            post_content,
+            post_author,
+            post_phone,
+            user_id,
+            post_hit_count,
+            main_yn,
+            use_yn,
+            post_reg_date )
+        values(
+            <!-- #{postId},  -->
+            #{boardId}, 
+            #{postCategoryId},
+            #{postTitle}, 
+            #{postContent}, 
+            #{postAuthor}, 
+            #{postPhone}, 
+            #{userId}, 
+            #{postHitCount},
+            #{mainYn},
+            #{useYn}, 
+            DATE_FORMAT(SYSDATE(), '%Y/%m/%d %H:%i:%s') )
+    </insert>
+
+    <update id="updatePost" parameterType="com.openeg.openegscts.board.entity.Post">
+        update post_tb set 
+            board_id = #{boardId},
+            category_id = #{postCategoryId},
+            post_title = #{postTitle},
+            post_content = #{postContent},
+            post_author = #{postAuthor},
+            post_phone = #{postPhone},
+            user_id = #{userId},
+            <!-- post_hit_count = ${postHitCount}, -->
+            main_yn = #{mainYn},
+            use_yn = #{useYn},
+            post_reg_date = DATE_FORMAT(SYSDATE(), '%Y/%m/%d %H:%i:%s')
+        where post_id = #{postId}
+    </update>
+
+    <update id="updatePostHit" parameterType="long">
+        update post_tb set 
+            post_hit_count = (select case count(*) when 0 then 1 else max(post_hit_count) + 1 end)
+        where post_id = #{postId}
+    </update>
+
+    <update id="updatePostUseYn" parameterType="long">
+        update post_tb set 
+            use_yn = (select if(use_yn = 'Y', 'N', 'Y') as use_yn)
+        where post_id = #{postId}
+    </update>
+
+    <update id="updatePostMainYn" parameterType="long">
+        update post_tb set 
+            main_yn = (select if(main_yn = 'Y', 'N', 'Y') as main_yn)
+        where post_id = #{postId}
+    </update>
+
+    <delete id="deletePost" parameterType="long">
+        delete from post_tb where post_id=#{postId}
+    </delete>
+
+    <select id="totalRecords" resultType="int">
+        select FOUND_ROWS();
+    </select>
+</mapper>

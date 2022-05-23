@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+
+<mapper namespace="com.openeg.openegscts.practice.repository.IPracticeMapper">
+    <select id="findAccountById" parameterType="string" resultType="com.openeg.openegscts.practice.entity.CloudAccountEntity">
+      select cat.cloud_account_id as cloudAccountId,
+             cat.username as userName,
+             cat.password as passWord,
+             cat.url as cloudUrl,
+             cat.access_key_id as accessKeyId,
+             cat.client_secret as clientSecret
+      from cloud_account_tb cat
+
+
+             join user_tb ut
+                  on ut.cloud_account_id = cat.cloud_account_id
+
+      where ut.user_id = #{userId}
+      order by cloudAccountId
+
+    </select>
+</mapper>

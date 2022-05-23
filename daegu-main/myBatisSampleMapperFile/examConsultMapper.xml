@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.openeg.openegscts.exam.repository.IExamConsultMapper">
+  <select id="findExamConsultReservation" parameterType="string" resultType="com.openeg.openegscts.exam.entity.ExamConsultReservationEntity">
+    SELECT exam_consulting_id as examConsultingId,
+           user_id            as userId,
+           consulting_date    as consultingDate,
+           reg_date           as regDate,
+           approval_date      as approvalDate,
+           content            as content,
+           result_comment     as resultComment
+
+    from exam_consulting_tb
+    where user_id = #{userId}
+    order by regDate desc
+  </select>
+
+  <select id="findExamConsultReservationById" parameterType="int" resultType="com.openeg.openegscts.exam.entity.ExamConsultReservationEntity">
+    SELECT exam_consulting_id as examConsultingId,
+           user_id            as userId,
+           consulting_date    as consultingDate,
+           reg_date           as regDate,
+           approval_date      as approvalDate,
+           content            as content,
+           result_comment     as resultComment
+
+    from exam_consulting_tb
+    where exam_consulting_id = #{examConsultingId}
+  </select>
+
+  <select id="findExamConsultReservationRequests" parameterType="string" resultType="com.openeg.openegscts.exam.entity.ExamConsultReservationEntity">
+    SELECT ect.exam_consulting_id as examConsultingId,
+           ect.user_id            as userId,
+           ect.consulting_date    as consultingDate,
+           ect.reg_date           as regDate,
+           ect.approval_date      as approvalDate,
+           ect.content            as content,
+           ect.result_comment     as resultComment
+
+    from exam_consulting_tb ect
+           left join user_tb ut
+                     on ut.user_id = ect.user_id
+           left join group_tb gt
+                     on ut.group_id = (select group_id from user_tb where user_id = #{userId})
+    order by consultingDate desc
+  </select>
+
+  <select id="findReservedTimeAtTheDate" parameterType="string" resultType="com.openeg.openegscts.exam.entity.ReservedTimeEntity">
+    select exam_consulting_id as examConsultingId,
+           consulting_date as time
+    from exam_consulting_tb
+    where consulting_date like concat(#{date}
+        , '%')
+  </select>
+
+
+  <insert id="reserveExamConsult" parameterType="com.openeg.openegscts.exam.entity.ExamConsultReserveEntity">
+    insert into exam_consulting_tb(user_id, consulting_date, content)
+    values (#{userId}, #{date}, #{content})
+  </insert>
+
+<!--  <update id="approveExamConsult" parameterType="com.openeg.openegscts.exam.entity.ExamConsultReservationEntity">-->
+<!--    update exam_consulting_tb-->
+<!--    set approval_date  = #{approvalDate},-->
+<!--        result_comment = "면담대기중"-->
+<!--    where exam_consulting_id = #{examConsultingId}-->
+<!--  </update>-->
+
+  <update id="approveExamConsult" parameterType="com.openeg.openegscts.exam.entity.ExamConsultReservationEntity">
+    update exam_consulting_tb
+    set approval_date  = consulting_date,
+        result_comment = "면담대기중"
+    where exam_consulting_id = #{examConsultingId}
+  </update>
+
+
+  <update id="completeExamConsulting" parameterType="int">
+    update exam_consulting_tb
+    set result_comment = "면담완료"
+    where exam_consulting_id = #{examConsultingId}
+  </update>
+
+  <delete id="cancelExamConsult" parameterType="int">
+    delete from exam_consulting_tb
+    where exam_consulting_id = #{examConsultingId}
+  </delete>
+
+</mapper>

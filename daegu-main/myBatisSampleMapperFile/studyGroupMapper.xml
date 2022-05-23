@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+
+<mapper namespace="com.openeg.openegscts.study_group.repository.IStudyGroupMapper">
+
+  <select id="findStudyGroups" resultType="com.openeg.openegscts.study_group.entity.StudyGroupEntity">
+    SELECT sgt.s_group_id    as studyGroupId,
+           sgt.s_group_name  as studyGroupName,
+           sgt.content       as content,
+           sgt.limit_count   as limitCount,
+           sgt.reg_date      as regDate,
+           sgt.approval_date as approvalDate,
+           sgt.user_id       as userId,
+           (
+             select count(sgmt.user_id)
+             from s_group_member_tb sgmt
+             WHERE sgmt.s_group_id = sgt.s_group_id
+               and sgmt.status in ('Y', 'L')
+           )                 as memberCount,
+           sgt.status        as status
+
+    from s_group_tb sgt
+           join s_group_member_tb sgmt
+                on sgmt.s_group_id = sgt.s_group_id
+
+    group by studyGroupId
+    order by regDate desc;
+  </select>
+
+  <select id="findStudyGroupByMemberId" parameterType="int" resultType="com.openeg.openegscts.study_group.entity.StudyGroupEntity">
+    SELECT sgt.s_group_id    as studyGroupId,
+           sgt.s_group_name  as studyGroupName,
+           sgt.content       as content,
+           sgt.limit_count   as limitCount,
+           sgt.reg_date      as regDate,
+           sgt.approval_date as approvalDate,
+           sgt.user_id       as userId,
+           (
+             select count(sgmt.user_id)
+             from s_group_member_tb sgmt
+             WHERE sgmt.s_group_id = sgt.s_group_id
+               and sgmt.status in ('Y', 'L')
+           )                 as memberCount,
+           sgt.status        as status
+
+    from s_group_tb sgt
+           join s_group_member_tb sgmt
+                on sgmt.s_group_id = sgt.s_group_id
+    where sgmt.s_group_member_id = #{memberId}
+
+    group by studyGroupId
+  </select>
+
+
+  <select id="findStudyGroupDetailById" parameterType="int" resultType="com.openeg.openegscts.study_group.entity.StudyGroupDetailEntity">
+    SELECT distinct sgt.s_group_id                      as studyGroupId,
+                    sgt.s_group_name                    as studyGroupName,
+                    sgt.content                         as content,
+                    sgt.limit_count                     as limitCount,
+                    sgt.reg_date                        as regDate,
+                    sgt.approval_date                   as approvalDate,
+                    sgt.user_id                         as userId,
+                    (
+                      select count(user_id)
+                      from s_group_member_tb
+                      WHERE s_group_id = sgt.s_group_id
+                        and status in ('Y', 'L')
+                    )                                   as memberCount,
+                    sgt.status                          as status,
+                    (select MAX(reservation_date)
+                     from s_group_reservation_tb
+                     WHERE s_group_id = sgt.s_group_id) as reserveDate,
+                    (select z.zoom_url
+                     from zoom_tb z
+                            left join s_group_reservation_tb sgrt on sgrt.zoom_id = sgrt.zoom_id
+                     where sgrt.s_group_id = sgt.s_group_id
+                     order by sgrt.reservation_date desc limit 1)                    as reserveUrl,
+                    (SELECT distinct case
+                                       when
+                                         (select exists(
+                                                   select MAX(sgrt1.reservation_date)
+                                                   from s_group_reservation_tb sgrt1
+                                                   where sgrt1.s_group_id = sgt.s_group_id) = sgt.s_group_id)
+                                         then
+                                         case
+                                           when (
+                                               (select ifnull(MAX(sgrt2.approval_date), 'W')
+                                                from s_group_reservation_tb sgrt2
+                                                where sgrt2.s_group_id = sgt.s_group_id
+                                                  and sgrt2.reg_date =
+                                                      (select MAX(sgrt3.reg_date)
+                                                       from s_group_reservation_tb sgrt3
+                                                       WHERE sgrt3.s_group_id = sgt.s_group_id)
+                                               ) = 'W')
+                                             then 'W'
+                                           ELSE 'Y'
+                                           END
+                                       ELSE 'N'
+                                       END AS result
+
+                     from s_group_reservation_tb sgrt4
+                     WHERE sgrt4.s_group_id = sgt.s_group_id
+                    )                                as reserveYn
+
+    from s_group_tb sgt
+      left join s_group_member_tb sgmt
+    on sgmt.s_group_id = sgt.s_group_id
+      left join s_group_reservation_tb sgrt
+      on sgrt.s_group_id = sgt.s_group_id
+
+    where sgt.s_group_id = #{sGroupId}
+
+    group by studyGroupId
+
+  </select>
+
+
+  <select id="findStudyGroupMembers" resultType="com.openeg.openegscts.study_group.entity.StudyGroupMemberEntity">
+    SELECT sgmt.s_group_member_id as memberId,
+           sgmt.s_group_id        as studyGroupId,
+           sgmt.user_id           as userId,
+           sgmt.reg_date          as regDate,
+           sgmt.approval_date     as approvalDate,
+           sgmt.status            as status,
+           ct.title               as classTitle
+
+    from s_group_member_tb sgmt
+           join s_group_tb sgt
+                on sgt.s_group_id = sgmt.s_group_id
+           join class_tb ct
+                on ct.id = (
+                  select gt.class_id
+                  from group_tb gt
+                         left join user_tb ut
+                                   on gt.group_id = ut.group_id
+                  where ut.user_id = sgmt.user_id
+                )
+
+    order by approvalDate desc
+  </select>
+
+  <select id="findStudyGroupMembersById" parameterType="int" resultType="com.openeg.openegscts.study_group.entity.StudyGroupMemberEntity">
+    SELECT sgmt.s_group_member_id as memberId,
+           sgt.s_group_id         as studyGroupId,
+           sgmt.user_id           as userId,
+           sgmt.reg_date          as regDate,
+           sgmt.approval_date     as approvalDate,
+           sgmt.status            as status,
+           ct.title               as classTitle
+
+    from s_group_member_tb sgmt
+           left join s_group_tb sgt
+                     on sgmt.s_group_id = sgt.s_group_id
+           join class_tb ct
+                on ct.id = (select gt.class_id
+                            from group_tb gt
+                                   join user_tb ut
+                                        on ut.group_id = gt.group_id
+                            where ut.user_id = sgmt.user_id)
+    where sgt.s_group_id = #{sGroupId}
+      and sgmt.status in ("Y", "L")
+
+    order by approvalDate desc
+  </select>
+
+  <select id="findStudyGroupMemberJoinRequests" parameterType="int" resultType="com.openeg.openegscts.study_group.entity.StudyGroupMemberEntity">
+    SELECT sgmt.s_group_member_id as memberId,
+           sgt.s_group_id         as studyGroupId,
+           sgmt.user_id           as userId,
+           sgmt.reg_date          as regDate,
+           sgmt.approval_date     as approvalDate,
+           sgmt.status            as status
+
+    from s_group_member_tb sgmt
+           left join s_group_tb sgt
+                     on sgmt.s_group_id = sgt.s_group_id
+    where sgmt.status != "Y"
+    and sgmt.status != "L"
+    and sgmt.status != "R"
+    and sgt.s_group_id = #{sGroupId}
+    order by regDate desc
+  </select>
+
+
+  <select id="findReservedTimeAtTheDate" parameterType="string" resultType="com.openeg.openegscts.study_group.entity.ReservedTimeEntity">
+    select s_group_reservation_id as reservationId,
+           reservation_date as time
+    from s_group_reservation_tb sgrt
+    WHERE s_group_id = #{sGroupId}
+      and reservation_date like concat(#{date}
+        , '%')
+  </select>
+
+  <select id="findStudyRoomReservation" parameterType="int" resultType="com.openeg.openegscts.study_group.entity.StudyRoomReservationEntity">
+    SELECT sgrt.s_group_reservation_id as reservationId,
+           sgrt.reservation_date       as reservationDate,
+           sgrt.approval_date          as approvalDate,
+           sgrt.content                as purpose,
+           z.zoom_url                  as url
+
+    from s_group_reservation_tb sgrt
+           left join zoom_tb z
+                     on z.zoom_id = sgrt.zoom_id
+    where s_group_id = #{sGroupId}
+    order by reservationDate desc
+  </select>
+
+  <select id="findStudyGroupActiveInfo" parameterType="string" resultType="com.openeg.openegscts.study_group.entity.StudyGroupActiveInfoEntity">
+    select postCount, replyCount
+    from (
+           select count(s_group_post_id) as postCount
+           from s_group_post_tb
+           where user_id = #{userId}
+             and s_group_id = #{sGroupId}
+         ) a
+           join
+         (
+           select count(s_group_reply_id) as replyCount
+           from s_group_reply_tb sgrt
+
+                  join s_group_post_tb sgpt
+                       on sgpt.s_group_post_id = sgrt.s_group_post_id
+
+                  join s_group_tb sgt
+                       on sgt.s_group_id = sgpt.s_group_id
+
+           where sgrt.user_id = #{userId}
+             and sgt.s_group_id = #{sGroupId}
+         ) b
+  </select>
+
+  <insert id="makeStudyGroup" parameterType="com.openeg.openegscts.study_group.entity.StudyGroupEntity">
+    insert into s_group_tb(s_group_name, content, limit_count, user_id)
+    values (#{studyGroupName}, #{content}, #{limitCount}, #{userId})
+    <selectKey resultType="int" keyProperty="studyGroupId" order="AFTER">
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+  </insert>
+
+  <insert id="insertGroupLeader" parameterType="com.openeg.openegscts.study_group.entity.StudyGroupMemberEntity">
+    INSERT
+    ignore INTO s_group_member_tb (s_group_id, user_id, status)
+    SELECT #{studyGroupId}, #{userId}, "L"
+    from dual
+    WHERE NOT EXISTS(SELECT * FROM s_group_member_tb WHERE s_group_id = #{studyGroupId} AND user_id = #{userId})
+  </insert>
+
+  <insert id="requestForGroupMemberJoin" parameterType="com.openeg.openegscts.study_group.entity.StudyGroupMemberEntity">
+    INSERT
+    ignore INTO s_group_member_tb (s_group_id, user_id)
+    SELECT #{studyGroupId}, #{userId}
+    from dual
+    WHERE NOT EXISTS(SELECT * FROM s_group_member_tb WHERE s_group_id = #{studyGroupId} AND user_id = #{userId})
+  </insert>
+
+  <insert id="reserveStudyRoom" parameterType="com.openeg.openegscts.study_group.entity.StudyRoomReserveEntity">
+    insert into s_group_reservation_tb(s_group_id, reservation_date, content, user_id, user_name)
+    values (#{sGroupId}, #{date}, #{content}, #{userId}, #{userName})
+  </insert>
+
+
+  <update id="acceptOrDeny" parameterType="com.openeg.openegscts.study_group.entity.AcceptStudyGroupJoinEntity">
+    update s_group_member_tb
+    set status = #{accept}
+    where s_group_member_id = #{memberId}
+  </update>
+
+  <delete id="kickMemberById" parameterType="string">
+    delete
+    from s_group_member_tb
+    where s_group_member_id = #{memberId}
+      and user_id != #{userId}
+  </delete>
+
+  <delete id="leaveStudyGroup" parameterType="string">
+    delete
+    from s_group_member_tb
+    where s_group_id = #{sGroupId}
+      and user_id = #{userId}
+  </delete>
+
+  <delete id="closeStudyGroup" parameterType="int">
+    delete
+    from s_group_tb
+    where s_group_id = #{sGroupId}
+  </delete>
+
+
+</mapper>

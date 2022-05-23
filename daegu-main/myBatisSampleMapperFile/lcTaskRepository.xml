@@ -1,0 +1,344 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.openeg.openegscts.lc_post.repository.ILcTaskMapper">
+
+  <select id="findLcTaskListByClassIdAndSubClassId" parameterType="long" resultType="com.openeg.openegscts.lc_post.entity.LcTaskEntity">
+    select task_id        as taskId,
+           user_id        as userId,
+           hit_count      as hitCount,
+           class_id       as classId,
+           sub_class_id   as subClassId,
+           parent_task_id as parentTaskId,
+           title          as title,
+           content        as content,
+           reg_date       as regDate,
+           start_date     as startDate,
+           end_date       as endDate
+
+    from task_tb
+    where class_id = #{classId}
+      and sub_class_id = #{subClassId}
+      and parent_task_id is null
+    order by regDate desc;
+  </select>
+
+  <select id="findLcTaskById" parameterType="int" resultType="com.openeg.openegscts.lc_post.entity.LcTaskEntity">
+    select task_id        as taskId,
+           user_id        as userId,
+           hit_count      as hitCount,
+           class_id       as classId,
+           sub_class_id   as subClassId,
+           parent_task_id as parentTaskId,
+           title          as title,
+           content        as content,
+           reg_date       as regDate,
+           start_date     as startDate,
+           end_date       as endDate
+
+    from task_tb
+    where task_id = #{taskId}
+  </select>
+
+  <select id="findLcTaskFileByUserId" parameterType="string" resultType="com.openeg.openegscts.lc_post.entity.LcTaskFileEntity">
+    select tft.task_id            as taskId,
+           tft.task_file_id       as taskFileId,
+           tt.class_id            as classId,
+           tt.sub_class_id        as subClassId,
+           tft.file_type          as fileType,
+           tft.original_file_name as originalFileName,
+           tft.new_file_name      as newFileName
+
+    from task_file_tb tft
+           join task_tb tt
+                on tt.task_id = tft.task_id
+    where tt.user_id = #{userId}
+      and tt.task_id = #{taskId}
+  </select>
+
+  <select id="findLcTaskFileByTaskId" parameterType="int" resultType="com.openeg.openegscts.lc_post.entity.LcTaskFileEntity">
+    select tft.task_id            as taskId,
+           tft.task_file_id       as taskFileId,
+           tt.class_id            as classId,
+           tt.sub_class_id        as subClassId,
+           tft.file_type          as fileType,
+           tft.original_file_name as originalFileName,
+           tft.new_file_name      as newFileName
+
+    from task_file_tb tft
+           join task_tb tt
+                on tt.task_id = tft.task_id
+    where tt.task_id = #{taskId}
+  </select>
+
+
+  <select id="findLcSubmitTaskFileByUserId" parameterType="string" resultType="com.openeg.openegscts.lc_post.entity.LcSubmitTaskFileEntity">
+    select tft.task_id            as taskId,
+           tft.task_file_id       as taskFileId,
+           tt.class_id            as classId,
+           tt.sub_class_id        as subClassId,
+           tft.file_type          as fileType,
+           tft.original_file_name as originalFileName,
+           tft.new_file_name      as newFileName
+
+    from task_file_tb tft
+           join task_tb tt
+                on tt.task_id = tft.task_id
+    where tt.user_id = #{userId}
+      and tt.parent_task_id = #{taskId}
+  </select>
+
+  <select id="findLcSubmitTaskFileBySubmitTaskId" parameterType="int" resultType="com.openeg.openegscts.lc_post.entity.LcSubmitTaskFileEntity">
+    select tft.task_id            as taskId,
+           tft.task_file_id       as taskFileId,
+           tt.class_id            as classId,
+           tt.sub_class_id        as subClassId,
+           tft.file_type          as fileType,
+           tft.original_file_name as originalFileName,
+           tft.new_file_name      as newFileName
+
+    from task_file_tb tft
+           join task_tb tt
+                on tt.task_id = tft.task_id
+    where tt.task_id = #{taskId}
+  </select>
+
+  <select id="findSubmitTaskFileById" parameterType="int" resultType="com.openeg.openegscts.lc_post.entity.LcSubmitTaskFileEntity">
+    select ft.task_id            as taskId,
+           ft.task_file_id       as taskFileId,
+           tt.class_id           as classId,
+           ft.file_type          as fileType,
+           ft.original_file_name as originalFileName,
+           ft.new_file_name      as newFileName
+
+    from task_file_tb ft
+           join task_tb tt
+                on tt.task_id = ft.task_id
+    where ft.task_file_id = #{fileId}
+  </select>
+
+
+  <select id="findTaskFileById" parameterType="int" resultType="com.openeg.openegscts.lc_post.entity.LcTaskFileEntity">
+    select ft.task_id            as taskId,
+           ft.task_file_id       as taskFileId,
+           tt.class_id           as classId,
+           ft.file_type          as fileType,
+           ft.original_file_name as originalFileName,
+           ft.new_file_name      as newFileName
+
+    from task_file_tb ft
+           join task_tb tt
+                on tt.task_id = ft.task_id
+    where ft.task_file_id = #{fileId}
+  </select>
+
+  <select id="findLcSubmitTaskByUserId" parameterType="string" resultType="com.openeg.openegscts.lc_post.entity.PostLcSubmitTaskEntity">
+    select task_id        as taskId,
+           parent_task_id as parentTaskId,
+           user_id        as userId,
+           class_id       as classId,
+           sub_class_id   as subClassId
+
+    from task_tb
+    where user_id = #{userId}
+      and parent_task_id = #{taskId}
+  </select>
+
+  <select id="findLcTaskResultByUserId" parameterType="string" resultType="com.openeg.openegscts.lc_post.entity.LcTaskResultEntity">
+    SELECT tt1.parent_task_id                                                     as taskId,
+           (SELECT title FROM task_tb tt2 WHERE tt2.task_id = tt1.parent_task_id) as title,
+           tst.score                                                              as score,
+           tst.comment                                                            as comment,
+           tt1.reg_date                                                           as submitDate
+    FROM task_tb tt1
+           LEFT JOIN task_score_tb tst ON tt1.task_id = tst.submit_task_id
+    WHERE tt1.user_id = #{userId}
+    order by submitDate desc;
+  </select>
+
+  <select id="findLcTasksByTeacherId" parameterType="string" resultType="com.openeg.openegscts.lc_post.entity.LcTaskInfoEntity">
+    select DISTINCT tt.task_id      as taskId,
+                    tt.title        as title,
+                    tt.start_date   as startDate,
+                    tt.end_date     as endDate,
+                    tt.class_id     as classId,
+                    tt.sub_class_id as subClassId,
+                    ifnull(
+                      (select DISTINCT ttv.submit_student
+                       from task_teacher_view ttv
+                              left join task_tb tt2
+                                        on tt2.task_id = ttv.task_id
+
+                       where tt2.user_id = tt.user_id
+                         and ttv.task_id = tt.task_id
+                      ), 0)         as submitCount,
+
+                    (select count(DISTINCT ut.user_id)
+                     from task_score_tb tst2
+                            left join task_tb tt
+                                      on tt.task_id = tst2.submit_task_id
+                            left join group_tb gt2
+                                      on gt2.group_operator_id = tt.user_id
+                            left join user_tb ut
+                                      on ut.group_id = gt2.group_id
+                     where tt.class_id = gt2.class_id
+                       and ut.`type` = 1
+                    )               as studentCount
+    from task_teacher_view ttv
+           left join task_tb tt
+                     on tt.task_id = ttv.task_id
+    WHERE tt.user_id = #{userId}
+    order by tt.start_date desc
+  </select>
+
+  <select id="findLcSubmitTaskResultsByTaskId" parameterType="string" resultType="com.openeg.openegscts.lc_post.entity.LcTaskScoringResultEntity">
+    SELECT ttv.task_score_id as taskScoreId,
+           ttv.title         as title,
+           ut.user_id        as userId,
+           ttv.comment       as comment,
+           ttv.score         as score,
+           ttv.reg_date      as submitDate
+    FROM user_tb ut
+           LEFT JOIN task_teacher_view ttv ON ut.user_id = ttv.user_id AND ttv.task_id = #{taskId}
+    WHERE ut.type = 1
+      AND ut.group_id = (select max(group_id) from task_teacher_view ttv2 where teacher_id = #{userId})
+    order by ttv.reg_date desc,
+             userId;
+  </select>
+
+  <select id="findLcTaskResultByScoreId" parameterType="int" resultType="com.openeg.openegscts.lc_post.entity.LcTaskScoringResultEntity">
+    SELECT ttv.task_score_id  as taskScoreId,
+           ttv.submit_task_id as submitTaskId,
+           ttv.title          as title,
+           ttv.user_id        as userId,
+           ttv.comment        as comment,
+           ttv.score          as score,
+           ttv.reg_date       as submitDate
+
+    from task_teacher_view ttv
+    WHERE ttv.task_score_id = #{taskScoreId}
+  </select>
+
+  <update id="scoringSubmitTask" parameterType="com.openeg.openegscts.lc_post.entity.ScoringLcSubmitTaskEntity">
+    update task_score_tb
+    set score        = #{score}
+      , comment      = #{comment}
+      , scoring_date = NOW()
+    where task_score_id = #{taskScoreId};
+  </update>
+
+  <insert id="submitTask" parameterType="com.openeg.openegscts.lc_post.entity.PostLcSubmitTaskEntity">
+    insert into task_tb(parent_task_id, user_id, class_id, sub_class_id)
+    values (#{parentTaskId}, #{userId}, #{classId}, #{subClassId})
+    <selectKey resultType="int" keyProperty="taskId" order="AFTER">
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+  </insert>
+
+  <insert id="submitTaskScore" parameterType="int">
+    insert into task_score_tb(submit_task_id)
+    values (#{taskId})
+  </insert>
+
+  <insert id="postTask" parameterType="com.openeg.openegscts.lc_post.entity.LcTaskEntity">
+    insert into task_tb(user_id,
+    class_id,
+    sub_class_id,
+    title,
+    content,
+    start_date,
+    end_date)
+    values ( #{userId},
+    #{classId},
+    #{subClassId},
+    #{title},
+    #{content},
+    #{startDate},
+    #{endDate})
+    <selectKey resultType="int" keyProperty="taskId" order="AFTER">
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+  </insert>
+
+  <insert id="postTaskFile" parameterType="com.openeg.openegscts.lc_post.entity.LcTaskFileEntity">
+    insert into task_file_tb(task_id, file_type, original_file_name, new_file_name) values
+    <foreach collection="list" item="task" separator=",">
+      (#{task.taskId},#{task.fileType}, #{task.originalFileName}, #{task.newFileName})
+    </foreach>
+  </insert>
+
+  <insert id="submitTaskFile" parameterType="com.openeg.openegscts.lc_post.entity.SubmitLcTaskFileEntity">
+    insert into task_file_tb(task_id, file_type, original_file_name, new_file_name) values
+    <foreach collection="list" item="submitTask" separator=",">
+      (#{submitTask.taskId},#{submitTask.fileType}, #{submitTask.originalFileName}, #{submitTask.newFileName})
+    </foreach>
+  </insert>
+
+  <update id="modifySubmitTaskScore" parameterType="com.openeg.openegscts.lc_post.entity.PostLcSubmitTaskEntity">
+    update task_score_tb
+    set submit_task_id = #{submitTaskId},
+        score          = #{score},
+        comment        = #{comment}
+    where task_score_id = #{taskScoreId}
+  </update>
+
+  <update id="modifyTask" parameterType="com.openeg.openegscts.lc_post.entity.LcTaskEntity">
+    update task_tb
+    set
+    user_id = #{userId},
+    title = #{title},
+    content = #{content},
+    start_date = #{startDate},
+    end_date = #{endDate}
+
+    where task_id = #{taskId}
+    and class_id = #{classId}
+    and sub_class_id = #{subClassId}
+    <selectKey resultType="int" keyProperty="taskId" order="AFTER">
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+
+  </update>
+
+  <update id="plusHitCount" parameterType="int">
+    update task_tb
+    set hit_count = (hit_count + 1)
+    where task_id = #{taskId};
+  </update>
+
+  <delete id="deleteTask" parameterType="int">
+    delete
+    from task_tb
+    where task_id = #{taskId};
+  </delete>
+
+  <delete id="deleteTaskFiles" parameterType="com.openeg.openegscts.lc_post.entity.LcTaskFileEntity">
+    delete from task_file_tb where task_file_id in
+    <foreach collection="list" item="taskFile" index="i" open="(" separator="," close=")">
+      #{taskFile.taskFileId}
+    </foreach>
+  </delete>
+
+  <delete id="deleteSubmitTaskFiles" parameterType="com.openeg.openegscts.lc_post.entity.LcSubmitTaskFileEntity">
+    delete from task_file_tb where task_file_id in
+    <foreach collection="list" item="taskFile" index="i" open="(" separator="," close=")">
+      #{taskFile.taskFileId}
+    </foreach>
+  </delete>
+
+
+  <delete id="deleteSubmitTask" parameterType="string">
+    delete
+    from task_tb
+    where parent_task_id = #{taskId}
+      and user_id = #{userId}
+  </delete>
+
+  <delete id="deleteSubmitTaskScore" parameterType="int">
+    delete
+    from task_score_tb
+    where task_score_id = #{taskScoreId}
+  </delete>
+
+</mapper>

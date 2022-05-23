@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+
+<mapper namespace="com.openeg.openegscts.study_group.repository.IStudyGroupPostMapper">
+
+  <select id="findStudyGroupPosts" parameterType="int" resultType="com.openeg.openegscts.study_group.entity.StudyGroupPostEntity">
+    select s_group_id      as sGroupId,
+           s_group_post_id as sPostId,
+           title           as title,
+           content         as content,
+           reg_date        as regDate,
+           user_id         as userId,
+           hit_count       as hitCount
+
+    from s_group_post_tb sgpt
+    where s_group_id = #{sGroupId}
+    order by regDate desc;
+  </select>
+
+  <select id="findStudyGroupPostById" parameterType="int" resultType="com.openeg.openegscts.study_group.entity.StudyGroupPostEntity">
+    select s_group_id      as sGroupId,
+           s_group_post_id as sPostId,
+           title           as title,
+           content         as content,
+           reg_date        as regDate,
+           user_id         as userId,
+           hit_count       as hitCount
+
+    from s_group_post_tb sgpt
+    where s_group_id = #{sGroupId}
+      and s_group_post_id = #{sPostId}
+  </select>
+
+  <select id="findStudyGroupFilesByPostId" parameterType="int" resultType="com.openeg.openegscts.study_group.entity.StudyGroupFileEntity">
+    select sgpt.s_group_id            as sGroupId,
+           sgpft.s_group_post_file_id as sPostFileId,
+           sgpft.s_group_post_id      as sPostId,
+           sgpft.file_type            as fileType,
+           sgpft.original_file_name   as originalFileName,
+           sgpft.new_file_name        as newFileName
+
+    from s_group_post_file_tb sgpft
+           join s_group_post_tb sgpt
+                on sgpt.s_group_post_id = sgpft.s_group_post_id
+    where sgpt.s_group_id = #{sGroupId}
+      and sgpt.s_group_post_id = #{sPostId}
+  </select>
+
+  <select id="findsPostFileById" parameterType="int" resultType="com.openeg.openegscts.study_group.entity.StudyGroupFileEntity">
+    select sgpt.s_group_id            as sGroupId,
+           sgpft.s_group_post_file_id as sPostFileId,
+           sgpft.s_group_post_id      as sPostId,
+           sgpft.file_type            as fileType,
+           sgpft.original_file_name   as originalFileName,
+           sgpft.new_file_name        as newFileName
+
+    from s_group_post_file_tb sgpft
+           join s_group_post_tb sgpt
+                on sgpt.s_group_post_id = sgpft.s_group_post_id
+    where sgpft.s_group_post_file_id = #{fileId}
+  </select>
+
+
+  <select id="findStudyGroupPostRepliesByPostId" parameterType="int" resultType="com.openeg.openegscts.study_group.entity.StudyGroupPostReplyEntity">
+    select sgrt.s_group_reply_id as sPostReplyId,
+           sgrt.s_group_post_id  as sPostId,
+           sgrt.user_id          as userId,
+           sgrt.content          as content,
+           sgrt.reg_date         as regDate
+
+    from s_group_reply_tb sgrt
+           join s_group_post_tb sgpt
+                on sgpt.s_group_post_id = sgrt.s_group_post_id
+    where sgpt.s_group_id = #{sGroupId}
+      and sgrt.s_group_post_id = #{sPostId}
+    order by regDate desc;
+  </select>
+
+  <select id="findStudyGroupPostReplyById" parameterType="int" resultType="com.openeg.openegscts.study_group.entity.StudyGroupPostReplyEntity">
+    select sgrt.s_group_reply_id as sPostReplyId,
+           sgrt.s_group_post_id  as sPostId,
+           sgrt.user_id          as userId,
+           sgrt.content          as content,
+           sgrt.reg_date         as regDate
+
+    from s_group_reply_tb sgrt
+           join s_group_post_tb sgpt
+                on sgpt.s_group_post_id = sgrt.s_group_post_id
+    where sgrt.s_group_reply_id = #{sPostReplyId}
+  </select>
+
+
+  <insert id="postStudyGroupPost" parameterType="com.openeg.openegscts.study_group.entity.StudyGroupPostEntity">
+    insert into s_group_post_tb(s_group_id, user_id, title, content)
+    values (#{sGroupId}, #{userId}, #{title}, #{content})
+    <selectKey resultType="int" keyProperty="sPostId" order="AFTER">
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+  </insert>
+
+  <insert id="postStudyGroupPostFile" parameterType="com.openeg.openegscts.study_group.entity.StudyGroupFileEntity">
+    insert into s_group_post_file_tb(s_group_post_id, file_type, original_file_name, new_file_name) values
+    <foreach collection="list" item="sPostFile" separator=",">
+      (#{sPostFile.sPostId}, #{sPostFile.fileType}, #{sPostFile.originalFileName}, #{sPostFile.newFileName})
+    </foreach>
+  </insert>
+
+  <insert id="postStudyGroupPostReply" parameterType="com.openeg.openegscts.study_group.entity.StudyGroupPostReplyEntity">
+    insert into s_group_reply_tb(s_group_post_id, user_id, content)
+    values (#{sPostId}, #{userId}, #{content})
+    <selectKey resultType="int" keyProperty="sPostReplyId" order="AFTER">
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+  </insert>
+
+  <update id="modifyStudyGroupPost" parameterType="com.openeg.openegscts.study_group.entity.StudyGroupPostEntity">
+    update s_group_post_tb
+    set title   = #{title},
+        content = #{content}
+    where s_group_post_id = #{sPostId}
+  </update>
+
+
+  <delete id="deleteStudyGroupPost" parameterType="int">
+    delete from s_group_post_tb where s_group_post_id = #{sPostId}
+  </delete>
+
+
+  <delete id="deleteStudyGroupPostFiles" parameterType="com.openeg.openegscts.study_group.entity.StudyGroupFileEntity">
+    delete from s_group_post_file_tb where s_group_post_file_id in
+    <foreach collection="list" item="sPostFile" index="i" open="(" separator="," close=")">
+      #{sPostFile.sPostFileId}
+    </foreach>
+  </delete>
+
+  <delete id="deleteStudyGroupPostReplyById" parameterType="int">
+    delete from s_group_reply_tb where s_group_reply_id = #{sPostReplyId}
+  </delete>
+
+  <delete id="deleteStudyGroupPostReplies" parameterType="com.openeg.openegscts.study_group.entity.StudyGroupPostReplyEntity">
+    delete from s_group_reply_tb where s_group_reply_id in
+    <foreach collection="list" item="sPostReply" index="i" open="(" separator="," close=")">
+      #{sPostReply.sPostReplyId}
+    </foreach>
+  </delete>
+
+  <update id="plusHitCount" parameterType="int">
+    update s_group_post_tb
+    set hit_count = (hit_count + 1)
+    where s_group_post_id = #{sPostId};
+  </update>
+
+
+</mapper>

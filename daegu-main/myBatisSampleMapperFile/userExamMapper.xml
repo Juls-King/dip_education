@@ -1,0 +1,288 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.openeg.openegscts.exam.repository.IExamMapper">
+
+  <select id="isExaminee" parameterType="string" resultType="string">
+    select g.group_exam_yn
+    from group_tb g
+           left join user_tb u
+                     on g.group_id = u.group_id
+    where u.user_id = #{userId}
+  </select>
+
+  <select id="isTaken" parameterType="string" resultType="string">
+    SELECT distinct case
+                      when (select exists(
+                                     select e.active
+                                     from exam_tb e
+                                            left JOIN group_tb g
+                                                      ON g.group_id = e.group_id
+                                            left join user_tb u
+                                                      on g.group_id = u.group_id
+                                     where u.user_id = #{useId}
+                                       AND e.active = 1) = 1)
+                        then
+                        case
+                          when (
+                            select exists(
+                                     select er.submit_date
+                                     from exam_result_tb er
+                                            left join exam_tb e
+                                                      on e.id = er.exam_id
+                                     where er.user_id = #{useId}
+                                       and e.active = 1) = 1)
+                            then
+                            case
+                              when (
+                                  (select ifnull(er.submit_date, 0)
+                                   from exam_result_tb er
+                                          left join exam_tb e
+                                                    on e.id = er.exam_id
+                                   where er.user_id = #{useId}
+                                     and e.active = 1) = 0)
+                                then 0
+                              ELSE 1
+                              end
+                          ELSE 0
+                          end
+                      ELSE 2
+                      END AS result
+
+    from exam_tb e
+           left join exam_result_tb er
+                     on e.id = er.exam_id
+
+  </select>
+
+  <select id="isStarted" parameterType="string" resultType="int">
+    select exists(
+             select er.start_date
+             from exam_result_tb er
+                    left join exam_tb e
+                              on e.id = er.exam_id
+             where user_id = #{userId}
+               and e.active = 1
+             )
+  </select>
+
+  <select id="getExamByExamId" parameterType="long"
+    resultType="com.openeg.openegscts.exam.entity.ExamEntity">
+    SELECT a.examId, a.examCount, a.groupName, a.classTitle, a.examTimeLimit, b.examProblemIdList
+    FROM (
+           SELECT e.id         AS examId,
+                  e.count      AS examCount,
+                  g.group_name AS groupName,
+                  ct.title     AS classTitle,
+                  e.time_limit AS examTimeLimit
+           FROM exam_tb e
+                  LEFT JOIN group_tb g
+                            ON e.group_id = g.group_id
+                  LEFT JOIN problem_list_tb pl
+                            ON e.id = pl.exam_id
+                  LEFT JOIN class_info_tb cit
+                            ON e.class_category_id = cit.class_category_id
+                  LEFT JOIN class_tb ct
+                            ON ct.id = cit.class_id
+           WHERE e.id = #{examId}
+           GROUP BY e.id, e.count, ct.title, e.time_limit
+         ) a
+           JOIN
+         (
+           SELECT GROUP_CONCAT(pl.problem_id) AS examProblemIdList
+           FROM problem_list_tb pl
+           WHERE pl.exam_id = #{examId}
+         ) b
+  </select>
+
+  <select id="getExamByGroupId" parameterType="int"
+    resultType="com.openeg.openegscts.exam.entity.ExamEntity">
+    SELECT a.examId, a.groupName, a.classTitle, a.examTimeLimit, b.examProblemIdList
+    FROM (SELECT e.id         AS examId,
+                 g.group_name AS groupName,
+                 ct.title     AS classTitle,
+                 e.time_limit AS examTimeLimit
+          FROM exam_tb e
+                 LEFT JOIN group_tb g
+                           ON e.group_id = g.group_id
+                 LEFT JOIN problem_list_tb pl
+                           ON e.id = pl.exam_id
+                 LEFT JOIN class_info_tb cit
+                           ON e.class_category_id = cit.class_category_id
+                 LEFT JOIN class_tb ct
+                           ON ct.id = cit.class_id
+
+          WHERE g.group_id = #{groupId}
+            AND e.sub_class_id = #{subClassId}
+            AND e.active = 1
+          GROUP BY e.id, g.group_name, ct.title, e.time_limit
+         ) a
+           LEFT JOIN
+         (SELECT pl.exam_id                  AS examId,
+                 GROUP_CONCAT(pl.problem_id) AS examProblemIdList
+          FROM problem_list_tb pl
+          GROUP BY examId) b
+         ON a.examId = b.examId
+  </select>
+
+  <select id="getRemainingTime" parameterType="string" resultType="int">
+    SELECT (time_to_sec(er.start_date) + e.time_limit) - TIME_TO_SEC(NOW())
+    FROM exam_tb e
+           JOIN exam_result_tb er
+                ON e.id = er.exam_id
+    WHERE er.user_id = #{userId}
+      AND e.active = 1
+  </select>
+
+  <select id="getProblemByProblemId" parameterType="long"
+    resultType="com.openeg.openegscts.exam.entity.ExamProblemEntity">
+    SELECT ep.id                    AS examProblemId,
+           ct.title                 AS classTitle,
+           ut.title                 AS unitTitle,
+           cct.category_name        AS categoryName,
+           ep.exam_type             AS examType,
+           ep.exam_correct_answer   as answer,
+           ep.exam_question         AS examQuestion,
+           ep.exam_question_content AS examQuestionContent,
+           ep.exam_explain          AS examQuestionDescription,
+           ep.exam_option_1         AS examOption1,
+           ep.exam_option_2         AS examOption2,
+           ep.exam_option_3         AS examOption3,
+           ep.exam_option_4         AS examOption4,
+           ep.exam_img_path_1       AS examImgPath1,
+           ep.exam_img_path_2       AS examImgPath2
+
+    FROM exam_problem_tb ep
+           LEFT JOIN objective_list_tb olt
+                     on olt.id = ep.objective_list_id
+           LEFT JOIN unit_tb ut
+                     on olt.unit_id = ut.id
+           LEFT JOIN class_info_tb cit
+                     ON cit.unit_id = ut.id
+           LEFT JOIN class_category_tb cct
+                     ON cct.id = cit.class_category_id
+           LEFT JOIN class_tb ct
+                     ON ct.id = cit.class_id
+    WHERE ep.id = #{problemId}
+    GROUP BY ep.id, ct.id, cct.id
+  </select>
+
+  <select id="getExamCorrectAnswer" parameterType="long"
+    resultType="com.openeg.openegscts.exam.entity.ExamCorrectAnswerEntity">
+    SELECT exam_correct_answer AS examCorrectAnswer,
+           exam_level          AS examLevel
+    FROM exam_problem_tb
+    WHERE id = #{problemId}
+  </select>
+
+  <select id="getExamResultCategoryName" parameterType="string"
+    resultType="com.openeg.openegscts.exam.entity.ExamResultCategory">
+    SELECT cct.id            AS classCategoryId,
+           cct.category_name AS categoryName
+    FROM exam_result_tb er
+           LEFT JOIN exam_tb e
+                     on er.exam_id = e.id
+           LEFT JOIN class_category_tb cct
+                     ON cct.id = e.class_category_id
+
+    WHERE er.user_id = #{userId}
+    GROUP BY cct.id, cct.category_name
+  </select>
+
+  <select id="getExamResult" parameterType="string"
+    resultType="com.openeg.openegscts.exam.entity.ExamScoreEntity">
+    SELECT examCount,
+           classCategoryId,
+           subClassId,
+           categoryName,
+           examStartDate,
+           examScoreResult,
+           examGroupTargetScore,
+           examGroupScoreAvg,
+           examHighLevelScore,
+           examMiddleLevelScore,
+           examLowLevelScore,
+           examHighLevelCount,
+           examMiddleLevelCount,
+           examLowLevelCount
+
+    FROM (SELECT e.id                                   AS examId,
+                 e.count                                AS examCount,
+                 cct.id                                 AS classCategoryId,
+                 er.sub_class_id                        AS subClassId,
+                 cct.category_name                      AS categoryName,
+                 DATE_FORMAT(er.start_date, '%Y-%m-%d') as examStartDate,
+                 er.score_result                        AS examScoreResult,
+                 g.group_complete_percentage            AS examGroupTargetScore,
+                 er.high_level_count                    AS examHighLevelScore,
+                 er.middle_level_count                  AS examMiddleLevelScore,
+                 er.low_level_count                     AS examLowLevelScore,
+                 e.high_level_count                     AS examHighLevelCount,
+                 e.middle_level_count                   AS examMiddleLevelCount,
+                 e.low_level_count                      AS examLowLevelCount
+          FROM exam_tb e
+
+                 LEFT JOIN exam_result_tb er
+                           ON er.exam_id = e.id
+
+                 LEFT JOIN class_category_tb cct
+                           ON cct.id = e.class_category_id
+
+                 LEFT JOIN group_tb g
+                           ON g.group_id = e.group_id
+
+          WHERE er.user_id = #{userId}
+            AND cct.id = #{classCategoryId}
+          GROUP BY e.id, e.count, cct.category_name, er.start_date,
+                   er.score_result, er.sub_class_id,
+                   g.group_complete_percentage,
+                   e.high_level_count, e.middle_level_count, e.low_level_count,
+                   er.high_level_count, er.middle_level_count, er.low_level_count
+         ) a
+
+           LEFT JOIN
+
+         (
+           SELECT e.id AS examId, AVG(er.score_result) AS examGroupScoreAvg
+
+           FROM exam_result_tb er
+                  LEFT JOIN exam_tb e
+                            ON er.exam_id = e.id
+
+           GROUP BY er.exam_id
+         ) b
+         ON a.examId = b.examId
+
+    order by examStartDate, examCount
+  </select>
+
+
+  <select id="getExamAnswerById" parameterType="long" resultType="string">
+    select exam_correct_answer
+    from exam_problem_tb
+    where id = #{examProblemId}
+  </select>
+
+  <insert id="startExam" parameterType="com.openeg.openegscts.exam.entity.ExamStartEntity">
+    insert into exam_result_tb
+      (exam_id, group_id, user_id, sub_class_id, start_date)
+    values ((select id from exam_tb where group_id = #{groupId} and sub_class_id = #{subClassId} and active = 1),
+            #{groupId}, #{userId}, #{subClassId},
+            DATE_FORMAT(NOW(), '%Y/%m/%d %H:%i:%s'))
+  </insert>
+
+  <update id="submitExam" parameterType="com.openeg.openegscts.exam.entity.ExamSubmitEntity">
+    update exam_result_tb
+    set submit_date=DATE_FORMAT(NOW(), '%Y/%m/%d %H:%i:%s'),
+        submit_answer=#{examSubmitAnswer},
+        submit_result=#{examSubmitResult},
+        score_result=#{examScoreResult},
+        high_level_count=#{examHighLevelCount},
+        middle_level_count=#{examMiddleLevelCount},
+        low_level_count=#{examLowLevelCount}
+    where user_id = #{userId}
+      and exam_id = #{examId}
+  </update>
+
+</mapper>

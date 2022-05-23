@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.openeg.openegscts.practice.repository.ILiveCodingMapper">
+
+  <select id="getLvContainerById" resultType="com.openeg.openegscts.practice.entity.LiveCodingEntity" parameterType="string">
+    select lct.user_id                                              as userId,
+           DATE_FORMAT(lct.quest_created_date, '%Y/%m/%d %H:%i:%s') as questCreatedDate,
+           lct.quest_live_time                                      as questLiveTime,
+           lct.quest_stored_live_time                               as questStoredLiveTime,
+           ct.vscode_port                                           as vsCodePort
+    from live_coding_tb lct
+           join container_tb ct
+                on lct.user_id = ct.user_id
+    where lct.user_id = #{userId}
+    order by lct.quest_created_date asc;
+
+  </select>
+
+  <insert id="insertLvContainer" parameterType="com.openeg.openegscts.practice.entity.LiveCodingEntity">
+    insert
+    ignore into live_coding_tb(user_id, quest_created_date) values(#{userId},NOW())
+  </insert>
+
+  <update id="updateLvContainerLiveTime" parameterType="com.openeg.openegscts.practice.entity.LiveCodingEntity">
+    update live_coding_tb
+    set quest_live_time=NOW()
+    where user_id = #{userId}
+  </update>
+
+  <update id="updateLvContainerStoredLiveTime" parameterType="com.openeg.openegscts.practice.entity.LiveCodingEntity">
+    update live_coding_tb
+    set quest_stored_live_time=(#{questStoredLiveTime} +
+                                TIMESTAMPDIFF(second ,#{questLiveTime}, NOW())),
+        quest_live_time=NULL
+    where user_id = #{userId}
+  </update>
+
+  <delete id="deleteLvContainer" parameterType="string">
+    delete
+    from live_coding_tb
+    where user_id = #{userId}
+  </delete>
+
+  <select id="findLogOutUsers" resultType="string">
+    select distinct lt.user_id
+    from logging_tb lt
+           left join container_tb ct
+                     on ct.user_id = lt.user_id
+           left join current_login_tb clt
+                     on lt.user_id = clt .user_id
+    where not exists (select clt.user_id from current_login_tb clt WHERE clt.user_id  = lt.user_id)
+      and ct.state = 1
+    ORDER BY user_id
+  </select>
+
+  <select id="isContainerLive" parameterType="string" resultType="boolean">
+    select count(ct.container_id)
+    from container_tb ct
+    WHERE container_id = "exited" and ct.user_id = #{userId}
+  </select>
+
+</mapper>

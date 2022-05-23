@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+
+<mapper namespace="com.openeg.openegscts.myclass.repository.IMyClassMapper">
+
+  <select id="findMyClassById" parameterType="long" resultType="com.openeg.openegscts.myclass.entity.MyClassEntity">
+    select base.classId,
+           title,
+           content,
+           keyWord,
+           totalTime,
+           startDate,
+           endDate,
+           classCount,
+           status,
+           regDate,
+           sub.todayZoomUrl,
+           sub.todayUnitId
+    from (select ct.id         as classId,
+                 ct.title      as title,
+                 ct.content    as content,
+                 ct.keyword    as keyWord,
+                 ct.total_time as totalTime,
+                 ct.start_date as startDate,
+                 ct.end_date   as endDate,
+                 ct.count      as classCount,
+                 ct.status     as status,
+                 ct.reg_date   as regDate
+          from class_tb ct
+          WHERE ct.id = 1
+         ) base
+
+           left join
+
+         (select cit.class_id as classId,
+                 zt.zoom_url  as todayZoomUrl,
+                 ut.id        as todayUnitId
+          from class_info_tb cit
+                 left join class_tb ct
+                           on ct.id = cit.class_id
+                 left join unit_tb ut
+                           on cit.unit_id = ut.id
+                 left join zoom_tb zt
+                           on zt.zoom_id = cit.zoom_id
+          where ct.id = 1
+            and CURDATE() = DATE_FORMAT(cit.chapter_date, "%Y-%m-%d")
+         ) sub
+         on base.classId = sub.classId
+  </select>
+
+  <select id="findUnitListByClassIdAndSubClassId" parameterType="long" resultType="com.openeg.openegscts.myclass.entity.UnitEntity">
+    select ut.id                 as unitId,
+           cit.class_id          as classId,
+           ut.title              as title,
+           ut.unit_time          as unitTime,
+           ut.content            as content,
+           ut.sub_class_id       as subClassId,
+           MIN(cit.chapter_date) as startDate,
+           MAX(cit.chapter_date) as endDate,
+           cit.class_category_id as categoryId,
+           cct.category_name     as categoryName,
+           cct.level             as level,
+           ut.lecture_yn         as lectureYn,
+           cit.zoom_yn           as zoomYn
+    from class_info_tb cit
+           left join unit_tb ut
+                     on ut.id = cit.unit_id
+           left join class_category_tb cct
+                     on cct.id = cit.class_category_id
+    where cit.class_id = #{classId}
+      and ut.sub_class_id = #{subClassId}
+    group by unitId, classId, title, unitTime, content, subClassId,
+             categoryId, categoryName, level, lectureYn, zoomYn
+    order by startDate
+  </select>
+
+
+  <select id="findUnitById" parameterType="long" resultType="com.openeg.openegscts.myclass.entity.UnitEntity">
+    select ut.id                 as unitId,
+           cit.class_id          as classId,
+           ut.title              as title,
+           ut.unit_time          as unitTime,
+           ut.content            as content,
+           ut.sub_class_id       as subClassId,
+           MIN(cit.chapter_date) as startDate,
+           MAX(cit.chapter_date) as endDate,
+           cit.class_category_id as categoryId,
+           cct.category_name     as categoryName,
+           cct.level             as level,
+           ut.lecture_yn         as lectureYn,
+           cit.zoom_yn           as zoomYn
+    from class_info_tb cit
+           left join unit_tb ut
+                     on ut.id = cit.unit_id
+           left join class_category_tb cct
+                     on cct.id = cit.class_category_id
+
+    where ut.id = #{unitId}
+    group by unitId, classId, title, unitTime, content, subClassId,
+             categoryId, categoryName, level, lectureYn, zoomYn
+  </select>
+
+
+  <select id="findChapterListByUnitId" parameterType="long" resultType="com.openeg.openegscts.myclass.entity.ChapterEntity">
+    select cpt.id                   as chapterId,
+           cit.unit_id              as unitId,
+           cpt.day                  as chapterDay,
+           cpt.title                as title,
+           cit.chapter_content      as content,
+           cit.video_name           as videoName,
+           cit.chapter_date         as chapterDate,
+           ct.replay_available_days as replayAvailableDays,
+           zt.zoom_url              as zoomUrl
+    from class_info_tb cit
+           left join chapter_tb cpt
+                     on cit.chapter_id = cpt.id
+           left join unit_tb ut
+                     on ut.id = cit.unit_id
+           left join class_tb ct
+                     on ct.id = cit.class_id
+           left join zoom_tb zt
+                     on zt.zoom_id = cit.zoom_id
+    where ut.id = #{unitId}
+  </select>
+
+  <select id="findChapterById" parameterType="long" resultType="com.openeg.openegscts.myclass.entity.ChapterEntity">
+    select cpt.id                   as chapterId,
+           cit.unit_id              as unitId,
+           cpt.day                  as chapterDay,
+           cpt.title                as title,
+           cit.chapter_content      as content,
+           cit.video_name           as videoName,
+           cit.chapter_date         as chapterDate,
+           ct.replay_available_days as replayAvailableDays,
+           zt.zoom_url              as zoomUrl
+    from class_info_tb cit
+           left join chapter_tb cpt
+                     on cit.chapter_id = cpt.id
+           left join unit_tb ut
+                     on ut.id = cit.unit_id
+           left join class_tb ct
+                     on ct.id = cit.class_id
+           left join zoom_tb zt
+                     on zt.zoom_id = cit.zoom_id
+    where cpt.id = #{chapterId}
+  </select>
+
+  <select id="logChecker" parameterType="com.openeg.openegscts.myclass.entity.MyclassHistoryEntity" resultType="int">
+    select EXISTS(select user_id, chapter_id from class_history_tb where user_id = #{userId} and chapter_id = #{chapterId})
+  </select>
+
+  <select id="findClassCategoryByClassId" parameterType="long" resultType="com.openeg.openegscts.myclass.entity.ClassCategoryEntity">
+    SELECT cct.id            as classCategoryId,
+           cct.category_name as title,
+           cct.content       as content
+    from class_category_tb cct
+           left join class_info_tb cit
+                     on cct.id = cit.class_category_id
+    WHERE cit.class_id = #{classId}
+    group by cct.id;
+  </select>
+
+  <insert id="logChapterHistory" parameterType="com.openeg.openegscts.myclass.entity.MyclassHistoryEntity">
+    INSERT INTO class_history_tb (chapter_id, user_id)
+    values (#{chapterId}, #{userId})
+  </insert>
+
+  <select id="findPreCourse" resultType="com.openeg.openegscts.myclass.entity.PreLearningEntity">
+    select pre_learning_id     as preLearningId,
+           class_id            as classId,
+           title               as title,
+           total_time          as totalTime,
+           content             as content,
+           original_image_name as originalImageName,
+           new_image_name      as newImageName,
+           url                 as url
+    from pre_learning_tb
+  </select>
+
+
+  <update id="postChapterContent" parameterType="java.util.HashMap">
+    <foreach index="chapterId" item="content" collection="content.entrySet()" separator=";">
+      update class_info_tb  set
+      chapter_content = #{content}
+      where chapter_id = #{chapterId}
+      and unit_id = #{unitId}
+    </foreach>
+  </update>
+
+</mapper>

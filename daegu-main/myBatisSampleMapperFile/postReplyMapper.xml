@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+
+<mapper namespace="com.openeg.openegscts.board.repository.IPostReplyMapper">
+
+    <select id="getPostReplyList" resultType="com.openeg.openegscts.board.entity.PostReply">
+        select 
+            <include refid="post_reply_column"></include>
+        from post_reply_tb r
+        where use_yn = 'Y'
+        order by reply_reg_date desc, reply_id desc 
+    </select>
+
+    <select id="getPostReplyListByPostId" resultType="com.openeg.openegscts.board.entity.PostReply"  parameterType="long">
+        select 
+            <include refid="post_reply_column"></include>
+        from post_reply_tb r
+        where post_id = #{postId} 
+            and use_yn = 'Y'
+        order by reply_reg_date desc, reply_id desc 
+    </select>
+
+    <select id="getPostReply" resultType="com.openeg.openegscts.board.entity.PostReply" parameterType="long">
+        select 
+            <include refid="post_reply_column"></include>
+        from post_reply_tb r
+        where reply_id = #{replyId} 
+            and use_yn = 'Y'
+    </select>
+
+    <sql id="post_reply_column">
+                r.reply_id as replyId,
+               r.post_id as replyPostId,
+               r.reply_content as replyContent,
+               r.reply_author as replyAuthor,
+               r.reply_phone as replyPhone,
+               r.user_id as replyUserId,
+               r.reply_hit_count as replyHitCount,
+               r.use_yn as replyUseYn,
+               r.reply_reg_date as replyRegDate
+    </sql>
+
+    <insert id="insertPostReply" useGeneratedKeys="true" keyProperty="replyId" keyColumn="reply_id" parameterType="com.openeg.openegscts.board.entity.PostReply">
+        <include refid="insert_post_repl"></include>
+    </insert>
+    <update id="updatePostReply" parameterType="com.openeg.openegscts.board.entity.PostReply">
+        <include refid="update_post_reply"></include>
+    </update>
+    <update id="updatePostReplyHit" parameterType="long">
+        <include refid="update_post_reply_hit"></include>
+    </update>
+    <update id="updatePostReplyUseYn" parameterType="long">
+        <include refid="update_post_reply_useyn"></include>
+    </update>
+    <delete id="deletePostReply" parameterType="long">
+        <include refid="delete_post_reply"></include>
+    </delete>
+
+    <sql id="insert_post_repl">
+        insert into post_reply_tb(
+            <!-- reply_id, -->
+            post_id,
+            reply_content,
+            reply_author,
+            reply_phone,
+            user_id,
+            reply_hit_count,
+            use_yn,
+            reply_reg_date )
+        values(
+            <!-- #{replyId},  -->
+            #{replyPostId}, 
+            #{replyContent},
+            #{replyAuthor},
+            #{replyPhone}, 
+            #{replyUserId}, 
+            #{replyHitCount},
+            #{replyUseYn}, 
+            DATE_FORMAT(SYSDATE(), '%Y/%m/%d %H:%i:%s') )
+    </sql>
+    <sql id="update_post_reply">
+        update post_reply_tb set 
+            post_id = #{replyPostId},
+            reply_content = #{replyContent},
+            reply_author = #{replyAuthor},
+            reply_phone = #{replyPhone},
+            user_id = #{replyUserId},
+            <!-- reply_hit_count = ${replyHitCount}, -->
+            use_yn = #{replyUseYn},
+            reply_reg_date = DATE_FORMAT(SYSDATE(), '%Y/%m/%d %H:%i:%s')
+        where reply_id = #{replyId}
+    </sql>
+    <sql id="update_post_reply_hit">
+        update post_reply_tb set 
+            reply_hit_count = (select case count(*) when 0 then 1 else max(reply_hit_count) + 1 end)
+        where reply_id = #{replyId}
+    </sql>
+    <sql id="update_post_reply_useyn">
+        update post_reply_tb set 
+            use_yn = (select if(use_yn = 'Y', 'N', 'Y') as use_yn)
+        where reply_id = #{replyId}
+    </sql>
+    <sql id="delete_post_reply">
+        delete from post_reply_tb where reply_id=#{replyId}
+    </sql>
+
+    <select id="totalRecords" resultType="int">
+        select FOUND_ROWS();
+    </select>
+</mapper>

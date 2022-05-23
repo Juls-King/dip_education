@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.openeg.openegscts.lc_post.repository.ILcNoticeMapper">
+
+  <select id="findLcPostListByClassIdAndSubClassId" parameterType="long" resultType="com.openeg.openegscts.lc_post.entity.LcNoticeEntity">
+    select lc_post_id          as lcPostId,
+           lc_post_category_id as lcPostCategoryId,
+           user_id             as userId,
+           hit_count           as hitCount,
+           class_id            as classId,
+           title               as title,
+           content             as content,
+           reg_date            as regDate
+
+    from lc_post_tb
+    where lc_post_category_id = 3
+      and class_id = #{classId}
+    order by regDate desc;
+  </select>
+
+  <select id="findLcNoticeById" parameterType="int" resultType="com.openeg.openegscts.lc_post.entity.LcNoticeEntity">
+    select lc_post_id          as lcPostId,
+           lc_post_category_id as lcPostCategoryId,
+           user_id             as userId,
+           hit_count           as hitCount,
+           class_id            as classId,
+           title               as title,
+           content             as content,
+           reg_date            as regDate
+    
+    from lc_post_tb
+    where lc_post_category_id = 3
+      and lc_post_id = #{postId}
+  </select>
+
+  <update id="plusHitCount" parameterType="int">
+    update lc_post_tb set hit_count = (hit_count + 1) where lc_post_id = #{lcPostId};
+  </update>
+
+</mapper>

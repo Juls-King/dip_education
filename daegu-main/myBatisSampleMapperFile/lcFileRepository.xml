@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.openeg.openegscts.lc_post.repository.ILcFileBoardMapper">
+
+  <select id="findLcFileBoardListByClassId" parameterType="long" resultType="com.openeg.openegscts.lc_post.entity.LcFileBoardPostEntity">
+    select lc_post_id          as lcPostId,
+           lc_post_category_id as lcPostCategoryId,
+           user_id             as userId,
+           class_id            as classId,
+           hit_count           as hitCount,
+           title               as title,
+           content             as content,
+           reg_date            as regDate
+
+    from lc_post_tb
+    where lc_post_category_id = 1
+      and class_id = #{classId}
+    order by regDate desc;
+  </select>
+
+  <select id="findLcFileBoardPostById" parameterType="int" resultType="com.openeg.openegscts.lc_post.entity.LcFileBoardPostEntity">
+    select lc_post_id          as lcPostId,
+           lc_post_category_id as lcPostCategoryId,
+           class_id            as classId,
+           user_id             as userId,
+           hit_count           as hitCount,
+           title               as title,
+           content             as content,
+           reg_date            as regDate
+
+    from lc_post_tb
+    where lc_post_category_id = 1
+      and lc_post_id = #{postId}
+  </select>
+
+  <select id="findLcFilesByPostId" parameterType="int" resultType="com.openeg.openegscts.lc_post.entity.LcFileEntity">
+    select ft.lc_post_id         as lcPostId,
+           ft.lc_post_file_id    as lcPostFileId,
+           pt.class_id           as classId,
+           ft.file_type          as fileType,
+           ft.original_file_name as originalFileName,
+           ft.new_file_name      as newFileName
+
+    from lc_post_file_tb ft
+           join lc_post_tb pt
+                on pt.lc_post_id = ft.lc_post_id
+    where pt.lc_post_id = #{postId}
+  </select>
+
+  <select id="findFileById" parameterType="int" resultType="com.openeg.openegscts.lc_post.entity.LcFileEntity">
+    select ft.lc_post_id         as lcPostId,
+           ft.lc_post_file_id    as lcPostFileId,
+           pt.class_id           as classId,
+           ft.file_type          as fileType,
+           ft.original_file_name as originalFileName,
+           ft.new_file_name      as newFileName
+
+    from lc_post_file_tb ft
+           join lc_post_tb pt
+                on pt.lc_post_id = ft.lc_post_id
+    where ft.lc_post_file_id = #{fileId}
+  </select>
+
+  <update id="plusHitCount" parameterType="int">
+    update lc_post_tb
+    set hit_count = (hit_count + 1)
+    where lc_post_id = #{lcPostId};
+  </update>
+
+  <select id="findLcPostRepliesByPostId" parameterType="int" resultType="com.openeg.openegscts.lc_post.entity.LcPostReplyEntity">
+    select lprt.lc_post_reply_id as lcPostReplyId,
+           lprt.lc_post_id       as lcPostId,
+           lprt.user_id          as userId,
+           lprt.content          as content,
+           lprt.reg_date         as regDate
+
+    from lc_post_reply_tb lprt
+           join lc_post_tb lpt
+                on lpt.lc_post_id = lprt.lc_post_id
+    where lpt.lc_post_id = #{lcPostId}
+    order by regDate desc;
+  </select>
+
+
+  <select id="findLcPostReplyById" parameterType="int" resultType="com.openeg.openegscts.lc_post.entity.LcPostReplyEntity">
+    select lprt.lc_post_reply_id as lcPostReplyId,
+           lprt.lc_post_id       as lcPostId,
+           lprt.user_id          as userId,
+           lprt.content          as content,
+           lprt.reg_date         as regDate
+
+    from lc_post_reply_tb lprt
+           join lc_post_tb lpt
+                on lpt.lc_post_id = lprt.lc_post_id
+    where lprt.lc_post_reply_id = #{lcPostReplyId}
+  </select>
+
+  <insert id="postLcFileBoardPost" parameterType="com.openeg.openegscts.lc_post.entity.LcFileBoardPostEntity">
+    insert into lc_post_tb(lc_post_category_id, class_id, user_id, title, content)
+    values (#{lcPostCategoryId}, #{classId}, #{userId}, #{title}, #{content})
+    <selectKey resultType="int" keyProperty="lcPostId" order="AFTER">
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+  </insert>
+
+  <insert id="postLcFileBoardPostFile" parameterType="com.openeg.openegscts.lc_post.entity.LcFileEntity">
+    insert into lc_post_file_tb(lc_post_id, file_type, original_file_name, new_file_name) values
+    <foreach collection="list" item="lcPostFile" separator=",">
+      (#{lcPostFile.lcPostId}, #{lcPostFile.fileType}, #{lcPostFile.originalFileName}, #{lcPostFile.newFileName})
+    </foreach>
+  </insert>
+
+  <insert id="postLcPostReply" parameterType="com.openeg.openegscts.lc_post.entity.LcPostReplyEntity">
+    insert into lc_post_reply_tb(lc_post_id, user_id, content)
+    values (#{lcPostId}, #{userId}, #{content})
+    <selectKey resultType="int" keyProperty="lcPostReplyId" order="AFTER">
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+  </insert>
+
+  <update id="modifyLcFileBoardPost" parameterType="com.openeg.openegscts.lc_post.entity.LcFileBoardPostEntity">
+    update lc_post_tb
+    set title   = #{title},
+        content = #{content}
+    where lc_post_id = #{lcPostId}
+  </update>
+
+
+  <delete id="deleteLcFileBoardPost" parameterType="int">
+    delete
+    from lc_post_tb
+    where lc_post_id = #{lcPostId}
+  </delete>
+
+  <delete id="deleteLcFileBoardPostFiles" parameterType="com.openeg.openegscts.lc_post.entity.LcFileEntity">
+    delete from lc_post_file_tb where lc_post_file_id in
+    <foreach collection="list" item="lcPostFile" index="i" open="(" separator="," close=")">
+      #{lcPostFile.lcPostFileId}
+    </foreach>
+  </delete>
+
+  <delete id="deleteLcPostReplyById" parameterType="int">
+    delete
+    from lc_post_reply_tb
+    where lc_post_reply_id = #{lcPostReplyId}
+  </delete>
+
+  <delete id="deleteLcPostReplies" parameterType="com.openeg.openegscts.lc_post.entity.LcPostReplyEntity">
+    delete from lc_post_reply_tb where lc_post_reply_id in
+    <foreach collection="list" item="lcPostReply" index="i" open="(" separator="," close=")">
+      #{lcPostReply.lcPostReplyId}
+    </foreach>
+  </delete>
+
+
+</mapper>

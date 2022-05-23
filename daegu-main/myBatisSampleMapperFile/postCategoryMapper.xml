@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+
+<mapper namespace="com.openeg.openegscts.board.repository.IPostCategoryMapper">
+
+    <select id="getPostCategoryList" resultType="com.openeg.openegscts.board.entity.PostCategory">
+        <include refid="post_category_seletc"></include>
+        from post_category_tb
+        where
+        <choose>
+            <when test="searchOption == 'categoryRegDate'">
+                DATE(category_reg_date) = #{searchKeyword}
+            </when>
+            <when test="searchOption == 'categoryName'">
+                category_name like CONCAT('%',#{searchKeyword},'%')
+            </when>
+            <otherwise>
+                category_type like CONCAT('%',#{searchKeyword},'%')
+            </otherwise>
+        </choose>
+        order by category_reg_date desc, category_id desc 
+    </select>
+
+    <select id="getPostCategoryListByType" resultType="com.openeg.openegscts.board.entity.PostCategory">
+        <include refid="post_category_seletc"></include>
+        from post_category_tb
+        where category_type = #{categoryType}
+            and board_id = #{boardId}
+            and use_yn = 'Y'
+        order by category_reg_date desc, category_id desc 
+    </select>
+
+    <select id="getPostCategoryTypeList" resultType="com.openeg.openegscts.board.entity.PostCategory"  parameterType="long">
+        select category_type as categoryType, 
+               board_id as boardId
+        from post_category_tb
+        where use_yn = 'Y'
+            and board_id = #{boardId}
+        group by category_type
+        order by category_type asc;
+    </select>
+
+    <select id="getPostCategory" resultType="com.openeg.openegscts.board.entity.PostCategory" parameterType="long">
+       <include refid="post_category_seletc"></include>
+        from post_category_tb
+        where category_id = #{categoryId}
+    </select>
+
+    <sql id="post_category_seletc">
+        select category_id as categoryId,
+               category_type as categoryType,
+               category_name as categoryName,
+               source_id as sourceId,
+               board_id as boardId,
+               use_yn as useYn,
+               category_reg_date as categoryRegDate
+    </sql>
+
+    <insert id="insertPostCategory" useGeneratedKeys="true" keyProperty="categoryId" keyColumn="category_id" parameterType="com.openeg.openegscts.board.entity.PostCategory">
+        insert into post_category_tb(
+            <!-- category_id, -->
+            category_type,
+            category_name,
+            source_id,
+            board_id,
+            use_yn,
+            category_reg_date )
+        values(
+            <!-- #{categoryId},  -->
+            #{categoryType},
+            #{categoryName}, 
+            #{sourceId},
+            #{boardId},
+            #{useYn}, 
+            DATE_FORMAT(SYSDATE(), '%Y/%m/%d %H:%i:%s') )
+    </insert>
+
+    <update id="updatePostCategory" parameterType="com.openeg.openegscts.board.entity.PostCategory">
+        update post_category_tb set 
+            category_type = #{categoryType},
+            category_name = #{categoryName},
+            source_id = #{sourceId},
+            board_id = #{boardId},
+            use_yn = #{useYn},
+            category_reg_date = DATE_FORMAT(SYSDATE(), '%Y/%m/%d %H:%i:%s')
+        where category_id = #{categoryId}
+    </update>
+
+    <update id="updatePostCategoryUseYn" parameterType="long">
+        update post_category_tb set 
+            use_yn = (select if(use_yn = 'Y', 'N', 'Y') as use_yn)
+        where category_id = #{categoryId}
+    </update>
+
+    <delete id="deletePostCategory" parameterType="long">
+        delete from post_category_tb where category_id=#{categoryId}
+    </delete>
+</mapper>

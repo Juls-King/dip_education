@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.openeg.openegscts.practice.repository.ILcContainerMapper">
+
+  <select id="getLcContainer" resultType="com.openeg.openegscts.practice.entity.LcContainerInfoEntity" parameterType="string">
+    select user_id,
+           vscode_port,
+           java_port,
+           python_port,
+           node_port,
+           container_id,
+           image,
+           state,
+           cdate
+    from container_tb
+    where user_id = #{user_id}
+  </select>
+
+  <select id="getLcContainerById" resultType="com.openeg.openegscts.practice.entity.LcContainerInfoEntity" parameterType="string">
+    select user_id,
+           vscode_port,
+           java_port,
+           python_port,
+           node_port,
+           container_id,
+           image,
+           state,
+           cdate
+    from container_tb
+    where container_id = #{container_id}
+  </select>
+
+  <select id="getUserLcContainer" resultType="com.openeg.openegscts.practice.entity.LcContainerInfoEntity" parameterType="string">
+    select container_id,
+           user_id,
+           vscode_port,
+           node_port,
+           java_port,
+           python_port,
+           state,
+           cdate
+    from container_tb
+    where user_id = #{user_id}
+  </select>
+
+  <select id="isExistsPortNumber" parameterType="int" resultType="boolean">
+    select exists( select vscode_port from container_tb where vscode_port=${portNumber});
+  </select>
+
+  <insert id="createLcContainer" useGeneratedKeys="true" keyProperty="idx" parameterType="com.openeg.openegscts.practice.entity.LcContainerInfoEntity">
+    insert into container_tb(user_id, cdate)
+    values (#{user_id}, DATE_FORMAT(SYSDATE(), '%Y/%m/%d %H:%i:%s'))
+  </insert>
+
+  <update id="updateLcContainerPort" parameterType="com.openeg.openegscts.practice.entity.LcContainerInfoEntity">
+    update container_tb
+    set vscode_port=#{vscode_port},
+        java_port=#{java_port},
+        python_port=#{python_port},
+        node_port=#{node_port},
+        state=#{state},
+        udate=DATE_FORMAT(SYSDATE(), '%Y/%m/%d %H:%i:%s')
+    where user_id = #{user_id}
+  </update>
+
+  <update id="updateLcContainerId" parameterType="com.openeg.openegscts.practice.entity.LcContainerInfoEntity">
+    update container_tb
+    set container_id=#{container_id},
+        state=#{state},
+        image=#{image},
+        udate=DATE_FORMAT(SYSDATE(), '%Y/%m/%d %H:%i:%s')
+    where user_id = #{user_id}
+  </update>
+
+</mapper>
